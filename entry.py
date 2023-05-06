@@ -1,14 +1,15 @@
 import sys
-from AF import AF
+from classes.Parser import Parser
 
 def readAF(content):
   alphabet, states, initial, finals, *transitions = content
-  machine = AF(
-    alphabet.strip().split(','),
-    states.strip().split(','),
-    initial.strip(),
-    finals.strip().split(','),
-    list(map(lambda x: x.strip(), transitions))
+  parser = Parser()
+  machine = parser.textToAF(
+    alphabet,
+    states,
+    initial,
+    finals,
+    transitions
   )
   print(machine)
 
