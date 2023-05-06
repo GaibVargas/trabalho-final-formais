@@ -9,5 +9,5 @@ Pastas
 - entries: Contém arquivos testes de entrada
 - util: Contém arquivos utilitários do projeto (funções que não se encaixam com a responsabilidade de alguma classe do sistema)
 
-Arquivos:
+Arquivos
 -main.py: Arquivo de entrada do sistema
