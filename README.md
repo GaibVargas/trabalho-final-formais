@@ -10,4 +10,4 @@ Pastas
 - util: Contém arquivos utilitários do projeto (funções que não se encaixam com a responsabilidade de alguma classe do sistema)
 
 Arquivos
--main.py: Arquivo de entrada do sistema
+- main.py: Arquivo de entrada do sistema
