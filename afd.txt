@@ -1,0 +1,9 @@
+AF
+a,b
+A,B
+A
+A
+A a B
+A b B
+B a A
+B b A
