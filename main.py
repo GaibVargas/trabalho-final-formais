@@ -29,7 +29,7 @@ def readFile(fileName):
       return readAF(content)
     if (fileType.strip() == 'GR'):
       return readGR(content)
-    print('sla')
+    print('Tipo de arquivo desconhecido')
 
 def AFPrint():
   fileName = sys.argv[2]
