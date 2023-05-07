@@ -1,7 +1,16 @@
 # Como rodar o projeto
 ```
-python main.py entries/<nome do arquivo>.txt
+python main.py <função> [entries/<nome do arquivo>.txt]
 ```
+### Exemplo
+```
+python main.py AF-GR entries/afd.txt
+```
+
+# Funções
+- AF-print: recebe um arquivo do tipo AF e printa um AFND construído
+- AF-GR: recebe um arquivo do tipo AF e printa gramática equivalente
+- GR-AF: recebe um arquivo do tipo GR e printa AFND equivalente
 
 # Organização do projeto
 Pastas
