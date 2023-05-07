@@ -1,0 +1,7 @@
+GR
+a,b
+S,A,B
+S
+S aA bA &
+A aB bB a b
+B aA bA

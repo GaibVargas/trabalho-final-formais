@@ -1,6 +1,7 @@
 import sys
-from typing import List
+from typing import Dict, List
 from classes.AF import AF
+from classes.GR import GR
 from classes.State import State
 from utils.utils import getStateById
 
@@ -30,7 +31,7 @@ class Parser:
     # Cria estados do autômato
     created_states: List[State] = []
     for id in sanitized_states:
-      state = State(id, id in sanitized_finals)
+      state = State(id)
       created_states.append(state)
     # Cria transições do autômato
     for transition in sanitized_transitions:
@@ -47,4 +48,28 @@ class Parser:
       created_states,
       initialState,
       list(map(lambda x: getStateById(created_states, x) ,sanitized_finals)),
+    )
+
+  def textToGR(
+    self,
+    terminals: str,
+    nTerminals: str,
+    initial: str,
+    productions: str,
+  ):
+    # Sanitiza entradas retirando espaços em branco e enter, e formata entrada
+    sanitized_terminals = terminals.strip().split(',')
+    sanitized_nTerminals = nTerminals.strip().split(',')
+    sanitized_initial = initial.strip()
+    sanitized_productions = list(map(lambda x: x.strip().split(' '), productions))
+    # Formata produções
+    formatted_productions: Dict[str, List[str]] = {}
+    for production in sanitized_productions:
+      head, *body = production
+      formatted_productions[head] = body
+    return GR(
+      sanitized_terminals,
+      sanitized_nTerminals,
+      sanitized_initial,
+      formatted_productions
     )

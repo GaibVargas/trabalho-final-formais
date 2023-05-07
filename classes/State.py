@@ -1,9 +1,8 @@
 from typing import Dict, List
 
 class State:
-  def __init__(self, id: str, isFinal: bool):
+  def __init__(self, id: str):
     self.id = id
-    self.isFinal = isFinal
     self.transitions: Dict[str, List[State]] = {}
   
   def addTransition(self, symbol: str, target: 'State'):
