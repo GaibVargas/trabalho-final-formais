@@ -11,6 +11,7 @@ python main.py AF-GR entries/afd.txt
 - AF-print: recebe um arquivo do tipo AF e printa um AFND construído
 - AF-GR: recebe um arquivo do tipo AF e printa gramática equivalente
 - GR-AF: recebe um arquivo do tipo GR e printa AFND equivalente
+- Af-min: recebe um arquivo do tipo AF e printa AFD semi-minimizado (falta calcular estados equivalentes)
 
 # Organização do projeto
 Pastas

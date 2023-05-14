@@ -50,6 +50,11 @@ def AFToGR():
   print(af)
   print(grammar)
 
+def AFMin():
+  fileName = sys.argv[2]
+  af = readFile(fileName)
+  af.minimize()
+
 def main():
   function = sys.argv[1]
   if function == "AF-print":
@@ -58,5 +63,7 @@ def main():
     return GRToAF()
   if function == "AF-GR":
     return AFToGR()
+  if function == "AF-min":
+    return AFMin()
 
 main()

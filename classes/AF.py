@@ -1,7 +1,7 @@
 import importlib
 from typing import Dict, List
 from classes.State import State
-from utils.utils import getIdByState, getIdsByStates
+from utils.utils import getIdByState, getIdsByStates, getOriginStatesFrom, getTargetStates
 
 class AF:
   def __init__(
@@ -44,6 +44,55 @@ class AF:
       initialProducion,
       productions
     )
+
+  def unreachableStates(self):
+    visited: List[State] = [self.initialState]
+    stack: List[State] = [self.initialState]
+    while len(stack) > 0:
+      current = stack.pop(0)
+      targetStates = getTargetStates(current)
+      for targetState in targetStates:
+        if targetState not in visited:
+          visited.append(targetState)
+          stack.append(targetState)
+    return list(filter(lambda x: x not in visited, self.states))
+
+  def removeDeadStatesTransitions(self, deadStates: List[State]):
+    for state in self.states:
+      deleteTransitions: List[str] = []
+      for key, values in state.transitions.items():
+        transitions = list(filter(lambda x: x not in deadStates, values))
+        if len(transitions) > 0:
+          state.transitions[key] = transitions
+        else:
+          deleteTransitions.append(key)
+      for transitionSymbol in deleteTransitions:
+        del state.transitions[transitionSymbol]
+
+  def deadStates(self):
+    visited: List[State] = self.finalStates.copy()
+    stack: List[State] = self.finalStates.copy()
+    while len(stack) > 0:
+      current = stack.pop(0)
+      originStates = getOriginStatesFrom(self.states, current)
+      for state in originStates:
+        if state not in visited:
+          visited.append(state)
+          stack.append(state)
+    deadStates = list(filter(lambda x: x not in visited, self.states))
+    self.removeDeadStatesTransitions(deadStates)
+    return deadStates
+
+  def minimize(self):
+    unreachableStates = self.unreachableStates()
+    reachableStates = list(filter(lambda x: x not in unreachableStates, self.states))
+    self.states = reachableStates
+
+    deadStates = self.deadStates()
+    nonDeadStates = list(filter(lambda x: x not in deadStates, self.states))
+    self.states = nonDeadStates
+
+    print(self)
 
   def __str__(self):
     transicoes = ""
