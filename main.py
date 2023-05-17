@@ -54,6 +54,7 @@ def AFMin():
   fileName = sys.argv[2]
   af = readFile(fileName)
   af.minimize()
+  print(af)
 
 def main():
   function = sys.argv[1]

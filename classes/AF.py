@@ -1,3 +1,4 @@
+import sys
 import importlib
 from typing import Dict, List
 from classes.State import State
@@ -69,6 +70,17 @@ class AF:
       for transitionSymbol in deleteTransitions:
         del state.transitions[transitionSymbol]
 
+  def updateStatesTransitions(self, changeFrom: List[State], changeTo: State):
+    for state in self.states:
+      for key, values in state.transitions.items():
+        newTransitions: List[State] = []
+        for target in values:
+          if target in changeFrom:
+            newTransitions.append(changeTo)
+          else:
+            newTransitions.append(target)
+        state.transitions[key] = newTransitions
+
   def deadStates(self):
     visited: List[State] = self.finalStates.copy()
     stack: List[State] = self.finalStates.copy()
@@ -83,6 +95,59 @@ class AF:
     self.removeDeadStatesTransitions(deadStates)
     return deadStates
 
+  def equivalentStates(self):
+    groups = {
+      '0': self.finalStates.copy(),
+      '1': list(filter(lambda x: x not in self.finalStates, self.states))
+    }
+    currentGroups: Dict[str, List[State]] = {}
+    while True:
+      for key, value in groups.items():
+        for state in value:
+          transitionToGroup: List[str] = [key]
+          for symbol in self.alphabet:
+            transitions = state.getTransitionBySymbol(symbol)
+            if transitions == None:
+              transitionToGroup.append('None')
+              continue
+            if len(transitions) > 1:
+              print('Erro: Transição não determinística')
+              sys.exit(1)
+            targetState = transitions[0]
+            for k, v in groups.items():
+              if targetState in v:
+                transitionToGroup.append(k)
+                break
+          transitionToGroupKey = '-'.join(transitionToGroup)
+          if transitionToGroupKey in currentGroups:
+            currentGroups[transitionToGroupKey].append(state)
+          else:
+            currentGroups[transitionToGroupKey] = [state]
+      if sorted(groups.values()) == sorted(currentGroups.values()):
+        break
+      else:
+        groups = currentGroups.copy()
+        currentGroups = {}
+    
+    equivalentStates: Dict[State, List[State]] = {}
+    for group in groups.values():
+      if len(group) == 1:
+        continue
+      key, *values = group
+      equivalentStates[key] = values
+    removedStates: List[State] = []
+    for key, values in equivalentStates.items():
+      self.updateStatesTransitions(values, key)
+      removedStates.extend(values)
+      for v in values:
+        if v == self.initialState:
+          self.initialState = key
+        if v in self.finalStates:
+          self.finalStates.remove(v)
+          if key not in self.finalStates:
+            self.finalStates.append(key)
+    self.states = list(filter(lambda x: x not in removedStates, self.states))
+
   def minimize(self):
     unreachableStates = self.unreachableStates()
     reachableStates = list(filter(lambda x: x not in unreachableStates, self.states))
@@ -91,8 +156,8 @@ class AF:
     deadStates = self.deadStates()
     nonDeadStates = list(filter(lambda x: x not in deadStates, self.states))
     self.states = nonDeadStates
-
-    print(self)
+    self.equivalentStates()
+    return self
 
   def __str__(self):
     transicoes = ""

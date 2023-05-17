@@ -11,6 +11,11 @@ class State:
     else:
       self.transitions[symbol].append(target)
   
+  def getTransitionBySymbol(self, symbol: str):
+    if symbol in self.transitions:
+      return self.transitions[symbol]
+    return None
+
   def stringifyTransitions(self):
     response = ""
     for symbol, transitions in self.transitions.items():
@@ -19,3 +24,6 @@ class State:
   
   def stringify(self):
     return self.stringifyTransitions()
+
+  def __lt__(self, other: 'State'):
+    return self.id < other.id
