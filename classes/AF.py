@@ -161,6 +161,19 @@ class AF:
     self.removeDeadStates()    
     self.removeEquivalentStates()
 
+  def test(self, word: str):
+    currentState = self.initialState
+    for letter in word:
+      if letter not in self.alphabet:
+        return False
+      nextState = currentState.deterministicTransition(letter)
+      if (not nextState):
+        return False
+      currentState = nextState
+    if (currentState not in self.finalStates):
+      return False
+    return True
+
   def __str__(self):
     transicoes = ""
     for state in self.states:

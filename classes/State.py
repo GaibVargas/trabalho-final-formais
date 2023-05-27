@@ -4,7 +4,12 @@ class State:
   def __init__(self, id: str):
     self.id = id
     self.transitions: Dict[str, List[State]] = {}
-  
+
+  def deterministicTransition(self, symbol: str):
+    if symbol not in self.transitions.keys():
+      return None
+    return self.transitions[symbol][0]
+
   def addTransition(self, symbol: str, target: 'State'):
     if symbol not in self.transitions:
       self.transitions[symbol] = [target]

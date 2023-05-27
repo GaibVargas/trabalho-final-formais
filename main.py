@@ -56,6 +56,22 @@ def AFMin():
   af.minimize()
   print(af)
 
+def AFTest():
+  fileName = sys.argv[2]
+  word = ''
+  if (len(sys.argv) >= 4):
+    word = sys.argv[3]
+
+  af = readFile(fileName)
+  # TODO: determinizar antes
+  af.minimize()
+  test = af.test(word)
+
+  if (word == ''):
+    word = 'Palavra vazia'
+  testResult = 'Sim' if test else 'Não'
+  print(f'"{word}" pertence a linguagem? {testResult}')
+
 def main():
   function = sys.argv[1]
   if function == "AF-print":
@@ -66,5 +82,7 @@ def main():
     return AFToGR()
   if function == "AF-min":
     return AFMin()
+  if function == "AF-test":
+    return AFTest()
 
 main()
