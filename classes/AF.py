@@ -46,7 +46,7 @@ class AF:
       productions
     )
 
-  def unreachableStates(self):
+  def removeUnreachableState(self):
     visited: List[State] = [self.initialState]
     stack: List[State] = [self.initialState]
     while len(stack) > 0:
@@ -56,7 +56,9 @@ class AF:
         if targetState not in visited:
           visited.append(targetState)
           stack.append(targetState)
-    return list(filter(lambda x: x not in visited, self.states))
+    unreachableStates = list(filter(lambda x: x not in visited, self.states))
+    reachableStates = list(filter(lambda x: x not in unreachableStates, self.states))
+    self.states = reachableStates
 
   def removeDeadStatesTransitions(self, deadStates: List[State]):
     for state in self.states:
@@ -81,7 +83,7 @@ class AF:
             newTransitions.append(target)
         state.transitions[key] = newTransitions
 
-  def deadStates(self):
+  def removeDeadStates(self):
     visited: List[State] = self.finalStates.copy()
     stack: List[State] = self.finalStates.copy()
     while len(stack) > 0:
@@ -93,18 +95,21 @@ class AF:
           stack.append(state)
     deadStates = list(filter(lambda x: x not in visited, self.states))
     self.removeDeadStatesTransitions(deadStates)
-    return deadStates
+    nonDeadStates = list(filter(lambda x: x not in deadStates, self.states))
+    self.states = nonDeadStates
 
-  def equivalentStates(self):
+  def removeEquivalentStates(self):
+    # grupos de equivalência baseados em chave de transição
     groups = {
       '0': self.finalStates.copy(),
       '1': list(filter(lambda x: x not in self.finalStates, self.states))
     }
     currentGroups: Dict[str, List[State]] = {}
     while True:
-      for key, value in groups.items():
-        for state in value:
-          transitionToGroup: List[str] = [key]
+      for equivalentKey, states in groups.items():
+        # cria a próxima chave do estado baseado nas suas transições
+        for state in states:
+          transitionToGroup: List[str] = [equivalentKey]
           for symbol in self.alphabet:
             transitions = state.getTransitionBySymbol(symbol)
             if transitions == None:
@@ -114,10 +119,12 @@ class AF:
               print('Erro: Transição não determinística')
               sys.exit(1)
             targetState = transitions[0]
-            for k, v in groups.items():
-              if targetState in v:
-                transitionToGroup.append(k)
+            # verifica em qual grupo de equivalência está o alvo da transição
+            for targetEquivalentKey, targetStates in groups.items():
+              if targetState in targetStates:
+                transitionToGroup.append(targetEquivalentKey)
                 break
+          # cria chave dos novos grupos
           transitionToGroupKey = '-'.join(transitionToGroup)
           if transitionToGroupKey in currentGroups:
             currentGroups[transitionToGroupKey].append(state)
@@ -129,35 +136,30 @@ class AF:
         groups = currentGroups.copy()
         currentGroups = {}
     
+    # remove estados equivalentes do autômato e substituí as transições
     equivalentStates: Dict[State, List[State]] = {}
-    for group in groups.values():
-      if len(group) == 1:
+    for states in groups.values():
+      if len(states) == 1:
         continue
-      key, *values = group
-      equivalentStates[key] = values
+      baseState, *restStates = states
+      equivalentStates[baseState] = restStates
     removedStates: List[State] = []
-    for key, values in equivalentStates.items():
-      self.updateStatesTransitions(values, key)
-      removedStates.extend(values)
-      for v in values:
+    for baseState, restStates in equivalentStates.items():
+      self.updateStatesTransitions(restStates, baseState)
+      removedStates.extend(restStates)
+      for v in restStates:
         if v == self.initialState:
-          self.initialState = key
+          self.initialState = baseState
         if v in self.finalStates:
           self.finalStates.remove(v)
-          if key not in self.finalStates:
-            self.finalStates.append(key)
+          if baseState not in self.finalStates:
+            self.finalStates.append(baseState)
     self.states = list(filter(lambda x: x not in removedStates, self.states))
 
   def minimize(self):
-    unreachableStates = self.unreachableStates()
-    reachableStates = list(filter(lambda x: x not in unreachableStates, self.states))
-    self.states = reachableStates
-
-    deadStates = self.deadStates()
-    nonDeadStates = list(filter(lambda x: x not in deadStates, self.states))
-    self.states = nonDeadStates
-    self.equivalentStates()
-    return self
+    self.removeUnreachableState()
+    self.removeDeadStates()    
+    self.removeEquivalentStates()
 
   def __str__(self):
     transicoes = ""
