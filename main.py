@@ -36,6 +36,11 @@ def AFPrint():
   response = readFile(fileName)
   print(response)
 
+def GRPrint():
+  fileName = sys.argv[2]
+  response = readFile(fileName)
+  print(response)
+
 def GRToAF():
   fileName = sys.argv[2]
   grammar = readFile(fileName)
@@ -72,10 +77,18 @@ def AFTest():
   testResult = 'Sim' if test else 'Não'
   print(f'"{word}" pertence a linguagem? {testResult}')
 
+def LL():
+  fileName = sys.argv[2]
+  gr = readFile(fileName)
+  first = gr.first()
+  print(first)
+
 def main():
   function = sys.argv[1]
   if function == "AF-print":
     return AFPrint()
+  if function == "GR-print":
+    return GRPrint()
   if function == "GR-AF":
     return GRToAF()
   if function == "AF-GR":
@@ -84,5 +97,7 @@ def main():
     return AFMin()
   if function == "AF-test":
     return AFTest()
+  if function == "LL":
+    return LL()
 
 main()
