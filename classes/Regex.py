@@ -1,216 +1,241 @@
-import string
-from RegEx.Element import Element
-from RegEx.ConcatenationNode import NodoConcatenacao
-from RegEx.ClosureNode import NodoFecho
-from RegEx.LeafNode import NodoFolha
-from RegEx.OptionalNode import NodoOpcional
-from RegEx.UnionNode import NodoUniao
-from RegEx.Tree import Arvore
-from AF import AF
-from State import State
-from RegEx.enums import Operacao, prioridade
+from classes.State import State
+from classes.AF import AF
 
-class ExpressaoRegular(Element):
-    arvore = None
+class Node:
+    def __init__(self, left=None,right=None,data=None,father=None,first=None,fulfilled=None):
+        self.father = father
+        self.left = left
+        self.right = right
+        self.data = data
+        self.lastpos = None
+        self.firstpos = None
+        self.nullable = None
+        self.is_first_of_chain = first
+        self.fulfilled = fulfilled
 
-    def __init__(self, nome):
-        super(ExpressaoRegular, self).__init__(nome)
+    def set_left(self, left):
+        self.left = left
 
-    # Recebe a expressão como texto e chama a função para gerar e armazenar a árvore correspondente
-    def ler(self, expressao):
-        self.gerar_arvore(expressao)
+    def get_left(self):
+        return self.left
+    
+    def set_right(self, right):
+        self.right = right
 
-    # Retorna a expressão regular como texto
-    def to_string(self):
-        return self.arvore.get_em_ordem()
+    def get_right(self):
+        return self.right
+    
+    def set_father(self, father):
+        self.father = father
 
-    # Gera a árvore a partir da expressão regular em texto
-    def gerar_arvore(self, expressao):
-        self.arvore = Arvore()
-        expressao = self.preparar_expressao(expressao)
-        if self.verificar_validade(expressao):
-            self.arvore.set_nodo_raiz(self.gerar_nodo(expressao))
-            self.arvore.costura_arvore()
-            self.arvore.numerar_folhas()
-        try:
-            self.verificar_validade(self.to_string())
-        except:
-            raise Exception
+    def get_father(self):
+        return self.father
+    
+    def set_data(self, data):
+        self.data = data
 
-    # Gera a árvore/sub-árvore a partir da expressão/sub-expressão regular dada
-    def gerar_nodo(self, expressao):
-        subexpressao = self.remover_parenteses_externos(expressao)
-        if len(subexpressao) == 1:
-            return NodoFolha(subexpressao)
+    def get_data(self):
+        return self.data
+
+    def post_order(self, root):
+        res = []
+        if root:
+            res = self.post_order(root.left)
+            res = res + self.post_order(root.right)
+            res.append(root)
+        return res
+
+def render_tree(regex):
+    string = regex.replace(' ','')[::-1]
+    tree = Node()
+    last = tree
+    index = 0
+    while(index < len(string)):
+        char = string[index]
+        if char == '#':
+            last.data = '#'
+            last.father = Node(left=last)
+            last.is_first_of_chain = True
+            tree = last
         else:
-            operador_div = None
-            prioridade_div = -1
-            posicao_div = None
-            parenteses_abertos = 0
-            for i in range(0, len(subexpressao)):
-                char = subexpressao[i]
-                if char == '(':
-                    parenteses_abertos += 1
-                elif char == ')':
-                    parenteses_abertos -= 1
-                elif parenteses_abertos == 0:
-                    if char == '|' and prioridade_div < 2:
-                        operador_div = Operacao.UNIAO
-                        prioridade_div = prioridade(operador_div)
-                        posicao_div = i
-                    if char == '.' and prioridade_div < 1:
-                        operador_div = Operacao.CONCATENACAO
-                        prioridade_div = prioridade(operador_div)
-                        posicao_div = i
-                    if char == '*' and prioridade_div < 0:
-                        operador_div = Operacao.FECHO
-                        prioridade_div = prioridade(operador_div)
-                        posicao_div = i
-                    if char == '?' and prioridade_div < 0:
-                        operador_div = Operacao.OPCIONAL
-                        prioridade_div = prioridade(operador_div)
-                        posicao_div = i
-            nodo = None
-            if operador_div == Operacao.UNIAO:
-                nodo = NodoUniao()
-                nodo.set_filho_esquerdo(self.gerar_nodo(subexpressao[0:posicao_div]))
-                nodo.set_filho_direito(self.gerar_nodo(subexpressao[posicao_div + 1:]))
-            elif operador_div == Operacao.CONCATENACAO:
-                nodo = NodoConcatenacao()
-                nodo.set_filho_esquerdo(self.gerar_nodo(subexpressao[0:posicao_div]))
-                nodo.set_filho_direito(self.gerar_nodo(subexpressao[posicao_div + 1:]))
-            elif operador_div == Operacao.FECHO:
-                nodo = NodoFecho()
-                nodo.set_filho_esquerdo(self.gerar_nodo(subexpressao[0:posicao_div]))
+            last, index = add_node(index,string,last)
+        index = index + 1
+    return tree.father.left
+
+def add_node(index, string, node):
+    char = string[index]
+    if char == ')':
+        index = index+1
+        char = string[index]
+        new_node = Node(data=char, first=True)
+        new_node.father = Node(left=new_node)
+        while(not string[index] == '('):
+            new_node, index = add_node(index+1, string, new_node)
+        n = new_node
+        while(n.data):
+            n = n.father
+        n = n.left
+        if not node.data == '*':
+            new = concatenation(n,node)
+            new.left.fulfilled = True
+            return new.left, index
+        else:
+            node.left = n
+            node.father.fulfilled = True
+            return node.father, index
+    elif char == '(':
+        return node, index
+    elif char == '|':
+        n = node
+        while(not n.is_first_of_chain):
+            n = node.father
+        new = Node(right=n,data='|', father=n.father)
+        n.father.left = new
+        n.father = new
+        return new, index
+    elif node.fulfilled:
+        new = concatenation(Node(data=char),node)
+        return new.left, index
+    elif node.data == '|':
+        node.left = Node(data=char, first=True, father=node)
+        return node.left, index
+    elif node.data == '*':
+        node.left = Node(data=char,father=node)
+        node.fulfilled = True
+        return node, index
+    else:
+        new = concatenation(Node(data=char),node)
+        return new.left, index
+    
+def def_nodes_function(tree):
+    nodes = tree.post_order(tree)
+    count = 1
+    nodes_index = dict()
+    for no in nodes:
+        if no.data == '|':
+                no.nullable = no.left.nullable or no.right.nullable
+                no.firstpos = no.left.firstpos | no.right.firstpos
+                no.lastpos = no.left.lastpos | no.right.lastpos
+        elif no.data == 'concatenation':
+            no.nullable = no.left.nullable and no.right.nullable
+            if no.left.nullable:
+                no.firstpos = no.left.firstpos | no.right.firstpos
             else:
-                nodo = NodoOpcional()
-                nodo.set_filho_esquerdo(self.gerar_nodo(subexpressao[0:posicao_div]))
-            return nodo
-
-    # Verifica se uma expressão é valida
-    def verificar_validade(self, expressao):
-        if not expressao:
-            raise Exception
-        chars_validos = string.ascii_lowercase + string.digits + '|.*?()'
-        nivel_parenteses = 0
-        char_anterior = ' '
-        i_real = 0
-        for i in range(0, len(expressao)):
-            char = expressao[i]
-            if char in chars_validos:
-                if i > 1:
-                    if char_anterior in '|.(' and char in '|.*?)':
-                        raise Exception
-                    elif char_anterior in '*?' and char in '*?':
-                        raise Exception
-                if char == '(':
-                    nivel_parenteses += 1
-                elif char == ')':
-                    nivel_parenteses -= 1
-                    if nivel_parenteses < 0:
-                        raise Exception
-                elif char == '.':
-                    i_real -= 1
+                no.firstpos = no.left.firstpos
+            if no.right.nullable:
+                no.lastpos = no.left.lastpos | no.right.lastpos
             else:
-                raise Exception
-            char_anterior = char
-            i_real += 1
-        if nivel_parenteses > 0:
-            raise Exception
-        return True
-
-    # Prepara a expressão para o algoritmo de construção da árvore
-    def preparar_expressao(self, expressao):
-        # Elimina espaços em branco
-        expressao = ''.join(expressao.split())
-        # Expõe concatenações
-        expressao = self.expor_concatenacoes_implicitas(expressao)
-        return expressao
-
-    # Expõe concatenações implícitas em uma expressão regular
-    def expor_concatenacoes_implicitas(self, expressao):
-        add_expressao = expressao
-        char_anterior = ' '
-        concats_adicionadas = 0
-        for i in range(0, len(expressao)):
-            char = expressao[i]
-            if (char_anterior.isalnum() or (char_anterior in ')*?')) and (char.isalnum() or char == '('):
-                add_expressao = add_expressao[:i+concats_adicionadas] + '.' + add_expressao[i+concats_adicionadas:]
-                concats_adicionadas += 1
-            char_anterior = char
-
-        return add_expressao
-
-    # Remove parênteses redundantes nas extremidades de uma expressão
-    def remover_parenteses_externos(self, expressao):
-        parenteses_encontrados = 0
-        nivel = 0
-        inicio = True
-        i = 0
-        comprimento_expr = len(expressao)
-        while i < comprimento_expr - parenteses_encontrados:
-            char = expressao[i]
-            if char == '(':
-                nivel += 1
-                if inicio:
-                    parenteses_encontrados = nivel
+                no.lastpos = no.right.lastpos
+        elif no.data == '*':
+            no.nullable = True
+            no.firstpos = no.left.firstpos
+            no.lastpos = no.left.lastpos
+        else:
+            if no.data != '&':
+                no.nullable = False
+                no.firstpos = set([count])
+                no.lastpos = set([count])
+                nodes_index[f'{count}'] = no.data
+                count = count + 1
             else:
-                inicio = False
-                if char == ')':
-                    nivel -= 1
-                    parenteses_encontrados = min(parenteses_encontrados, nivel)
-            i += 1
-        return expressao[parenteses_encontrados:comprimento_expr - parenteses_encontrados]
+                no.nullable = True
+                no.firstpos = set()
+                no.lastpos = set()
+    return count-1, nodes_index
+    
+def concatenation(node1,node2):
+    if node2.is_first_of_chain:
+        is_first = True
+        node2.is_first_of_chain = False
+    else:
+        is_first = False
+    newNode = Node(right=node2, data='concatenation', father=node2.father, first=is_first)
+    node1.father = newNode
+    node2.father.left = newNode
+    newNode.left = node1
+    return newNode
 
-    # Transforma esta expressão regular em um autômato finito
-    def obter_AF_equivalente(self):
-        folhas = self.arvore.numerar_folhas()
-        obter_composicao = {}
-        obter_estado = {}
-        i = 0
+def define_followpos(tree, n_nodes):
+    nodes = tree.post_order(tree)
+    followpos = dict()
+    for index in range(n_nodes):
+        followpos[f'{index+1}'] = set()
+    for no in nodes:
+        if no.data == 'concatenation':
+            for lastpos_node in no.left.lastpos:
+                followpos[str(lastpos_node)] = followpos[str(lastpos_node)] | no.right.firstpos
+        if no.data == '*':
+            for firstpos_node in no.lastpos:
+                followpos[str(firstpos_node)] = followpos[str(firstpos_node)] | no.firstpos
+    return followpos, tree.firstpos
 
-        prefixo_do_estado = 'Q'
-        estado_inicial = State(prefixo_do_estado + str(i))
-
-        composicao_da_raiz = self.arvore.composicao_da_raiz()
-        obter_composicao[estado_inicial] = composicao_da_raiz
-        obter_estado[self.obter_composicao_como_chave(composicao_da_raiz)] = estado_inicial
-
-        estados_do_automato = [estado_inicial]
-        estados_incompletos = [estado_inicial]
-        estados_de_aceitacao = []
-        alfabeto = []
-        i += 1
-        while len(estados_incompletos) > 0:
-            estado_atual = estados_incompletos.pop(0)
-            composicao_atual = obter_composicao[estado_atual]
-            for simbolo in composicao_atual:
-                if simbolo != '$':
-                    novo_estado = State(prefixo_do_estado + str(i))
-                    i += 1
-                    nova_composicao = {}
-                    if simbolo not in alfabeto:
-                        alfabeto.append(simbolo)
-                    for numero_folha in composicao_atual[simbolo]:
-                        folhas[numero_folha].subir(nova_composicao)
-                    obter_composicao[novo_estado] = nova_composicao
-                    nova_composicao_como_chave = self.obter_composicao_como_chave(nova_composicao)
-                    if nova_composicao_como_chave not in obter_estado:
-                        obter_estado[nova_composicao_como_chave] = novo_estado
-                        estados_do_automato.append(novo_estado)
-                        estados_incompletos.append(novo_estado)
-                    else:
-                        novo_estado = obter_estado[nova_composicao_como_chave]
-                    estado_atual.addTransition(simbolo, novo_estado)
+def dfa(followpos, nodes_index, initial_state):
+    union = dict()
+    states = list()
+    states.append(initial_state)
+    visited_states = list()
+    automata = dict()
+    while(not len(states) == 0):
+        state = states.pop()
+        visited_states.append(state)
+        for pos in state:
+            node = nodes_index.get(str(pos))
+            if not node == '#':
+                if not union.__contains__(node):
+                    union[node] = set(followpos.get(str(pos)))
                 else:
-                    estados_de_aceitacao.append(estado_atual)
-        automato = AF(alfabeto, estados_do_automato, estado_inicial, estados_de_aceitacao)
-        return automato
+                    union[node] = union.get(node) | set(followpos.get(str(pos)))
+        for s in union.items():
+            if visited_states.count(s[1]) == 0:
+                states.append(s[1])
+        automata[str(state)] = union.copy()
+        union.clear()
+    return automata
 
-    # Transforma a composição de um estado em um valor único
-    def obter_composicao_como_chave(self, composicao):
-        id_nova_composicao = []
-        for simb in composicao:
-            par = (simb, tuple(sorted(list(composicao[simb]))))
-            id_nova_composicao.append(par)
-        return tuple(id_nova_composicao)
+def format_dfa(automata, initial_state, final, alphabet):
+    dfa = dict()
+    dfa['n_estados'] = len(automata)
+    dfa['inicial'] = initial_state
+    dfa['aceitacao'] = list()
+    dfa['alfabeto'] = list(alphabet)
+    dfa['transicoes'] = dict()
+    estados = []
+    for transiction in automata:
+        if transiction.find(final):
+            dfa.get('aceitacao').append(transiction)
+        t = dict()
+        for a in alphabet:
+            tr = automata.get(transiction).get(a)
+            if (tr):
+                t[a] = [str(tr)]
+            else:
+                t[a] = []
+        dfa.get('transicoes')[transiction] = t
+    nomes_estados = list(dfa['transicoes'].keys())
+    estado_inicial = dfa['inicial']
+    estados_finais = []
+    for i in range(len(nomes_estados)):
+        estado_a_criar = State(nomes_estados[i])
+        estados.append(estado_a_criar)
+        if str(estado_inicial) == str(estado_a_criar.getId()):
+            estado_inicial = estado_a_criar
+        if (str(estado_a_criar.getId in dfa['aceitacao'])):
+            estados_finais.append(estado_a_criar)
+    transictions = dfa['transicoes']
+    for k, v in transictions.items():
+        index = nomes_estados.index(str(k))
+        for k2, v2 in v.items():
+            if v2 != []:
+               indexForTarget = nomes_estados.index(str(v2[0]))
+               estados[index].addTransition(k2, estados[indexForTarget]) 
+    dfamin = AF(dfa['alfabeto'], estados, estado_inicial, estados_finais)
+    return dfamin
+
+def er_to_dfa(string):
+    tree = render_tree(string)
+    n_nodes, nodes_index = def_nodes_function(tree)
+    followpos, initial_state = define_followpos(tree, n_nodes)
+    automata = dfa(followpos,nodes_index,initial_state)
+    final = [item[0] for item in list(nodes_index.items()) if item[1] == '#'][0]
+    alphabet = set([item[1] for item in list(nodes_index.items()) if not item[1] == '#'])
+    return format_dfa(automata, initial_state, final, alphabet)
