@@ -1,0 +1,8 @@
+GR
+a,b,c,d
+S,A,B,C
+S
+S aAa b
+A bB C
+B CB b
+C cAd &

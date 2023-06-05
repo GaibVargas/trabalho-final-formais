@@ -62,16 +62,17 @@ class GR:
     self._first = first
     return first
 
-  def headFirst(self, head:str, parcialFirst: Dict[str, Set[str]]):
+  def headFirst(self, head:str, parcialFirst: Dict[str, Set[str]], visited: List[str] = []):
     body = self.productions[head]
+    visited.append(head)
     for production in body:
       i = 0
       symbol = production[i]
       if symbol in self.terminals or symbol == '&':
         parcialFirst[head].add(symbol)
         continue
-      
-      self.headFirst(symbol, parcialFirst)
+      if symbol not in visited:
+        self.headFirst(symbol, parcialFirst, visited)
       symbolFormattedFirst = parcialFirst[symbol].copy().difference(set(['&']))
       parcialFirst[head] = parcialFirst[head].union(symbolFormattedFirst)
       while ('&' in parcialFirst[symbol]):
@@ -83,20 +84,10 @@ class GR:
         if symbol in self.terminals:
           parcialFirst[head].add(symbol)
           break
-        self.headFirst(symbol, parcialFirst)
+        if symbol not in visited:
+          self.headFirst(symbol, parcialFirst, visited)
         symbolFormattedFirst = parcialFirst[symbol].copy().difference(set(['&']))
         parcialFirst[head] = parcialFirst[head].union(symbolFormattedFirst)
-
-  def naiveFirst(self):
-    result: Dict[str, Set[str]] = {}
-    for head, body in self.productions.items():
-      for production in body:
-        first = production[0]
-        if head in result:
-          result[head].add(first)
-        else:
-          result[head] = set([first])
-    return result
 
   def __str__(self):
     productions = ''
