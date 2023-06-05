@@ -217,9 +217,9 @@ def format_dfa(automata, initial_state, final, alphabet):
     for i in range(len(nomes_estados)):
         estado_a_criar = State(nomes_estados[i])
         estados.append(estado_a_criar)
-        if str(estado_inicial) == str(estado_a_criar.getId()):
+        if str(estado_inicial) == str(estado_a_criar.id):
             estado_inicial = estado_a_criar
-        if (str(estado_a_criar.getId in dfa['aceitacao'])):
+        if (str(estado_a_criar.id) in dfa['aceitacao']):
             estados_finais.append(estado_a_criar)
     transictions = dfa['transicoes']
     for k, v in transictions.items():
