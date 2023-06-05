@@ -1,3 +1,5 @@
 from classes.Regex import *
 a = 'aa*(bb*aa*b)*#'
-b = er_to_dfa(a)
+b = '((1(00*1)*1)|0)*#'
+af = er_to_dfa(b)
+print(af)
