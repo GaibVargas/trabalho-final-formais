@@ -81,7 +81,9 @@ def LL():
   fileName = sys.argv[2]
   gr = readFile(fileName)
   first = gr.first()
-  print(first)
+  print(f'First: {first}')
+  follow = gr.follow()
+  print(f'Follow: {follow}')
 
 def main():
   function = sys.argv[1]
