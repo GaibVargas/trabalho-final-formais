@@ -58,24 +58,28 @@ class GR:
     for head in self.productions:
       first[head] = set()
     for head in self.productions:
-      if len(first[head]) == 0:
-        self.headFirst(head, first)
+      self.headFirst(head, first)
     self._first = first
     return first
 
+  # Calcula o first da cabeça de produção de forma recursiva
   def headFirst(self, head:str, partialFirst: Dict[str, Set[str]], visited: List[str] = []):
     body = self.productions[head]
     visited.append(head)
     for production in body:
       i = 0
       symbol = production[i]
+      # Se o primeiro símbolo for não terminal, coloca no conjunto e passa para próxima produção
       if symbol in self.terminals or symbol == '&':
         partialFirst[head].add(symbol)
         continue
+      # Se for um não terminal descubra seu first
       if symbol not in visited:
         self.headFirst(symbol, partialFirst, visited)
+      # Retira o & e faz união com o conjunto atual
       symbolFormattedFirst = partialFirst[symbol].copy().difference(set(['&']))
       partialFirst[head] = partialFirst[head].union(symbolFormattedFirst)
+      # Se o first do não terminal possuir &, continua pela produção para completar o conjunto first
       while ('&' in partialFirst[symbol]):
         i += 1
         if i >= len(production):
@@ -101,10 +105,12 @@ class GR:
     self._follow = follow
     return follow
 
+  # Calula follow imediato, ex: produções que contenham algo do tipo Na
   def immediateFollow(self, partialFollow: Dict[str, Set[str]]):
     for productions in self.productions.values():
       for production in productions:
         for i, symbol in enumerate(production):
+          # Se for produção unitária passa para próxima produção da cabeça
           if i + 1 >= len(production):
             continue
           nextSymbol = production[i + 1]
@@ -112,6 +118,7 @@ class GR:
             partialFollow[symbol].add(nextSymbol)
     return partialFollow
 
+  # Calcula follow para produções que contenham do tipo AB
   def indirectFollow(self, partialFollow: Dict[str, Set[str]]):
     for productions in self.productions.values():
       for production in productions:
@@ -119,6 +126,7 @@ class GR:
         nextIdx = idx + 1
         while nextIdx < len(production):
           symbol = production[idx]
+          # Enquanto o símbolo à direita for um não terminal e conter & em seu first faça:
           while True:
             nextSymbol = production[nextIdx]
             if symbol in self.terminals or nextSymbol in self.terminals:
@@ -135,15 +143,19 @@ class GR:
 
     return partialFollow
 
+  # Informação de dependencia, estrutura do tipo { 'S': ['A', 'B'] }
+  # Faz rastreamento para o passo de colocar o Follow(Head) no Follow(N)
+  # sendo N o último não terminal da produção
   def trackHeadToBodyFollowDependencies(self):
-    # Informação de dependencia, estrutura do tipo { 'S': ['A', 'B'] }
     dependencies: Dict[str, Set[str]] = {}
     for head in self.productions:
       dependencies[head] = set()
 
     for head, body in self.productions.items():
       for production in body:
+        # Percorre produção de trás para frente
         idx = len(production) - 1
+        # Enquanto último símbolo for não terminal e & pertencer ao seu first, faça:
         while True:
           symbol = production[idx]
           if symbol not in self.nTerminals:
@@ -161,7 +173,9 @@ class GR:
     for head, dependents in dependencies.items():
       for dependent in dependents:
         self.applyHeadToBodyFollow(dependent, head, partialFollow, dependencies)
-  
+
+  # Aplica regra de Follow(Head) pertence a Follow(N) de forma recursiva
+  # pelas dependencias rastreadas pela função trackHeadToBodyFollowDependencies
   def applyHeadToBodyFollow(
     self,
     target: str,
