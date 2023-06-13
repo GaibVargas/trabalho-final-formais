@@ -182,14 +182,15 @@ class GR:
     origin: str,
     partialFollow: Dict[str, Set[str]],
     dependencies: Dict[str, Set[str]],
-    visited: List[str] = [],
   ):
-    visited.append(target)
-    partialFollow[target] = partialFollow[target].union(partialFollow[origin])
+    old = partialFollow[target]
+    new = partialFollow[target].union(partialFollow[origin])
+    if (len(new.difference(old)) == 0):
+      return
+    partialFollow[target] = new
     dependents = dependencies[target]
     for dependent in dependents:
-      if dependent not in visited:
-        self.applyHeadToBodyFollow(dependent, target, partialFollow, dependencies, visited)
+      self.applyHeadToBodyFollow(dependent, target, partialFollow, dependencies)
 
   def __str__(self):
     productions = ''
