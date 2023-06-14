@@ -1,7 +1,7 @@
 GR
-a,b
-S,A,B
+*,=,i
+S,L,R
 S
-S AB
-A aA &
-B bB &
+S L=R R
+L *R i
+R L
