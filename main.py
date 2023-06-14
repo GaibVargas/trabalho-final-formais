@@ -61,6 +61,11 @@ def AFMin():
   af.minimize()
   print(af)
 
+def AFDet():
+  fileName = sys.argv[2]
+  af = readFile(fileName)
+  af.determinize()
+
 def AFTest():
   fileName = sys.argv[2]
   word = ''
@@ -101,5 +106,7 @@ def main():
     return AFTest()
   if function == "LL":
     return LL()
+  if function == "AF-det":
+    return AFDet()
 
 main()

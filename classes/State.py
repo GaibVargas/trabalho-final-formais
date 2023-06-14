@@ -27,8 +27,13 @@ class State:
       response += f'\t({self.id}, {symbol}): {list(map(lambda x: x.id, transitions))}\n'
     return response
   
+  def overwriteTransition(self, symbol: str, newTarget: 'State'):
+      self.transitions[symbol] = [newTarget]
+
+
   def stringify(self):
     return self.stringifyTransitions()
 
   def __lt__(self, other: 'State'):
     return self.id < other.id
+  

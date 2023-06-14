@@ -1,8 +1,8 @@
 import sys
 import importlib
-from typing import Dict, List
+from typing import Dict, List, Set
 from classes.State import State
-from utils.utils import getIdByState, getIdsByStates, getOriginStatesFrom, getTargetStates
+from utils.utils import getIdByState, getIdsByStates, getOriginStatesFrom, getTargetStates, getStateById, getDeterministicTargetId, UnionOfLists
 
 class AF:
   def __init__(
@@ -155,6 +155,108 @@ class AF:
           if baseState not in self.finalStates:
             self.finalStates.append(baseState)
     self.states = list(filter(lambda x: x not in removedStates, self.states))
+
+  def determinize(self):
+    if (self.hasEpsilonTransition()):
+      self.determinizeWithEpsilon()
+      return
+    self.determinizeWithoutEpsilon()
+  
+  def determinizeWithEpsilon(self):
+    #Calcular Epsilon Fecho
+    epsilonClosure = self.calculateEpsilonClosure()
+
+
+  def calculateEpsilonClosure(self):
+    epsilonClosure: Dict[str, Set[State]] = {}
+    for state in self.states:
+      visited: List[State] = [state]
+      stack: List[State] = [state]
+      while(len(stack) > 0):
+        current = stack.pop(0)
+        stateEpsilonTargetList = current.getTransitionBySymbol('&')
+        if(state.id in epsilonClosure):
+          epsilonClosure[state.id].add(current)
+        else:
+          epsilonClosure[state.id] = {current}
+        if(stateEpsilonTargetList == None):
+          continue
+        for target in stateEpsilonTargetList:
+          if(target not in visited):
+            stack.append(target)
+            visited.append(target)
+    return epsilonClosure
+  
+  def determinizeWithoutEpsilon(self):
+
+    visited: List[State] = [self.initialState]
+    stack: List[State] = [self.initialState]
+    while len(stack) > 0:
+      current = stack.pop(0)
+      for symbol in self.alphabet:
+        currentTargetsList = current.getTransitionBySymbol(symbol)
+        if(currentTargetsList == None):
+          continue
+        currentTargetId = getDeterministicTargetId(currentTargetsList)
+        if(self.existsStateWithId(currentTargetId)):
+          # Já existe estado com 'currentTargetId'
+          targetState = getStateById(self.states, currentTargetId)
+          if (targetState not in visited):
+            stack.append(targetState)
+            visited.append(targetState)
+        else:
+          # Não existe estado com 'currentTargetId'
+          targetState = self.createNewState(currentTargetsList)
+          stack.append(targetState)
+          visited.append(targetState)
+    self.transformTransitionsIntoDeterministic()
+    self.removeUnreachableState()
+    for state in self.finalStates:
+      if state not in self.states:
+        self.finalStates.remove(state)
+    print(self)
+    
+          
+    
+  def createNewState(self, targetList: List[State]) -> State:
+    newId = getDeterministicTargetId(targetList)
+    newState = State(newId)
+    for symbol in self.alphabet:
+      newStateTargetsWithSymbol: List[State] = []
+      for state in targetList:
+        newStateTargetsWithSymbol = UnionOfLists(state.getTransitionBySymbol(symbol), newStateTargetsWithSymbol)
+      for state in newStateTargetsWithSymbol:
+        newState.addTransition(symbol, state)
+    
+    # Com estado criado (com as devidas transições),
+    # vejamos se ele é estado final ou não e adicionamos à lista de estados
+
+    self.states.append(newState)
+    if (len([i for i in targetList if i in self.finalStates]) > 0):
+      self.finalStates.append(newState)
+
+    return newState
+
+  def transformTransitionsIntoDeterministic(self):
+    # Percorre o automato substituindo transições não deterministicas por deterministicas
+    # Ex.: A a [A,B,C] vira A a ABC
+    for state in self.states:
+
+      for symbol, states in state.transitions.items():
+        if(len(states) > 1):
+          state.overwriteTransition(symbol, getStateById(self.states, getDeterministicTargetId(states)))
+
+  def existsStateWithId(self, stateId: str) -> bool:
+    if(getStateById(self.states, stateId) == None):
+      return False
+    return True
+    
+
+  def hasEpsilonTransition(self) -> bool:
+    for state in self.states:
+      if (state.getTransitionBySymbol('&') != None):
+        return True
+    return False
 
   def minimize(self):
     self.removeUnreachableState()
