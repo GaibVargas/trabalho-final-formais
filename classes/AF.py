@@ -198,10 +198,12 @@ class AF:
           visited.append(targetState)
     self.transformTransitionsIntoDeterministic()
     self.removeUnreachableState()
+    # Aqui, eu tiro estados inalcançáveis da lista de estados finais
+    #TODO: falta tirar da lista de estados iniciais (se necessário). Ainda
+    # não fiz pq achei que talvez coubesse fazer isso em removeUnreachableState(). A discutir com o grupo 
     for state in self.finalStates:
       if state not in self.states:
         self.finalStates.remove(state)
-    print(self)
 
   def excludeEpsilonFromExistingStates(self, epsilonClosure: dict[str, Set[State]]):
     for state in self.states:
@@ -235,6 +237,7 @@ class AF:
     return newState
 
   def calculateEpsilonClosure(self):
+    # Retorna o Épsilon fecho do autômato
     epsilonClosure: Dict[str, Set[State]] = {}
     for state in self.states:
       visited: List[State] = [state]
@@ -255,7 +258,6 @@ class AF:
     return epsilonClosure
   
   def determinizeWithoutEpsilon(self):
-
     visited: List[State] = [self.initialState]
     stack: List[State] = [self.initialState]
     while len(stack) > 0:
@@ -280,10 +282,7 @@ class AF:
     self.removeUnreachableState()
     for state in self.finalStates:
       if state not in self.states:
-        self.finalStates.remove(state)
-    print(self)
-    
-          
+        self.finalStates.remove(state)           
     
   def createNewState(self, targetList: List[State]) -> State:
     newId = getDeterministicTargetId(targetList)
@@ -324,7 +323,36 @@ class AF:
       if (state.getTransitionBySymbol('&') != None):
         return True
     return False
+  
+  def union(self, otherAF: 'AF'):
+    newAlphabet: List[str] = UnionOfLists(self.alphabet, otherAF.alphabet)
+    newInitialState: State = State('newStart')
+    newInitialState.addNonExistingTransition('&', self.initialState)
+    newInitialState.addNonExistingTransition('&', otherAF.initialState)
+    for state in otherAF.states:
+      state.id = f"!{state.id}"
+    newStates: List[State] = UnionOfLists(self.states, otherAF.states)
+    newStates.append(newInitialState)
+    newFinalStates = UnionOfLists(self.finalStates, otherAF.finalStates)
+    return AF(
+      newAlphabet,
+      newStates,
+      newInitialState,
+      newFinalStates
+    )
 
+  def complement(self):
+    newFinalStates: List[State] = []
+    for state in self.states:
+      if state not in self.finalStates:
+        newFinalStates.append(state)
+    return AF(
+      self.alphabet,
+      self.states,
+      self.initialState,
+      newFinalStates
+    )
+  
   def minimize(self):
     self.removeUnreachableState()
     self.removeDeadStates()    
@@ -355,3 +383,4 @@ class AF:
       f"Transições:\n"
       f"{transicoes}"
     )
+  

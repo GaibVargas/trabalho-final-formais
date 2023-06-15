@@ -65,6 +65,7 @@ def AFDet():
   fileName = sys.argv[2]
   af = readFile(fileName)
   af.determinize()
+  print(af)
 
 def AFTest():
   fileName = sys.argv[2]
@@ -74,6 +75,7 @@ def AFTest():
 
   af = readFile(fileName)
   # TODO: determinizar antes
+  #af.determinize()
   af.minimize()
   test = af.test(word)
 
@@ -89,6 +91,25 @@ def LL():
   print(f'First: {first}')
   follow = gr.follow()
   print(f'Follow: {follow}')
+
+def AFUnion():
+  fileOneName = sys.argv[2]
+  fileTwoName = sys.argv[3]
+  afOne = readFile(fileOneName)
+  afTwo = readFile(fileTwoName)
+  union = afOne.union(afTwo)
+  print(union)
+
+def AFIntersection():
+  fileOneName = sys.argv[2]
+  fileTwoName = sys.argv[3]
+  afOne = readFile(fileOneName)
+  afTwo = readFile(fileTwoName)
+  afComplementOne = afOne.complement()
+  afComplementTwo = afTwo.complement()
+  unionOfComplement = afComplementOne.union(afComplementTwo)
+  unionOfComplement.determinize()
+  print(unionOfComplement.complement())
 
 def main():
   function = sys.argv[1]
@@ -108,5 +129,9 @@ def main():
     return LL()
   if function == "AF-det":
     return AFDet()
+  if function == "AF-union":
+    return AFUnion()
+  if function == "AF-intersection":
+    return AFIntersection()
 
 main()
