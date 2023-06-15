@@ -163,9 +163,76 @@ class AF:
     self.determinizeWithoutEpsilon()
   
   def determinizeWithEpsilon(self):
-    #Calcular Epsilon Fecho
+    # Calcular Epsilon Fecho
     epsilonClosure = self.calculateEpsilonClosure()
+    # Definir novo estado inicial
+    self.excludeEpsilonFromExistingStates(epsilonClosure)
+    newInitialStateList = list(epsilonClosure[self.initialState.id])
+    newInitialId = getDeterministicTargetId(newInitialStateList)
+    if(not self.existsStateWithId(newInitialId)):
+      # Não existe estado com 'newInitialId'
+      newInitialState = self.createNewStateWithEpsilon(newInitialStateList, epsilonClosure)
+      self.initialState = newInitialState
+    else: 
+      # Já existe o estado com newInitialId
+      newInitialState = getStateById(self.states, newInitialId)
+      self.initialState = newInitialState
+    visited: List[State] = [self.initialState]
+    stack: List[State] = [self.initialState]
+    while(len(stack) > 0):
+      current = stack.pop(0)
+      for symbol in self.alphabet:
+        targetList = current.getTransitionBySymbol(symbol)
+        if(targetList == None):
+          continue
+        targetId = getDeterministicTargetId(targetList)
+        targetState: State = None
+        if(self.existsStateWithId(targetId)):
+          # Já existe o estado com 'targetId'
+          targetState = getStateById(self.states, targetId)
+        else:
+          # Não existe o estado com 'targetId'
+          targetState = self.createNewStateWithEpsilon(targetList, epsilonClosure)
+        if(targetState not in visited):
+          stack.append(targetState)
+          visited.append(targetState)
+    self.transformTransitionsIntoDeterministic()
+    self.removeUnreachableState()
+    for state in self.finalStates:
+      if state not in self.states:
+        self.finalStates.remove(state)
+    print(self)
 
+  def excludeEpsilonFromExistingStates(self, epsilonClosure: dict[str, Set[State]]):
+    for state in self.states:
+      for symbol in self.alphabet:
+        targetList = state.getTransitionBySymbol(symbol)
+        if(targetList == None):
+          continue
+        for target in targetList:
+          targetList = UnionOfLists(targetList, list(epsilonClosure[target.id]))
+        for targetState in targetList:
+          state.addNonExistingTransition(symbol, targetState)
+      if(state.transitions.get("&") != None):
+        del state.transitions["&"]
+
+  def createNewStateWithEpsilon(self, targetList: List[State], epsilonClosure: dict[str, Set[State]]) -> State:
+    newId = getDeterministicTargetId(targetList)
+    newState = State(newId)
+    for symbol in self.alphabet:
+      newStateTargetsWithSymbol: List[State] = []
+      for state in targetList:  
+        newStateTargetsWithSymbol = UnionOfLists(state.getTransitionBySymbol(symbol), newStateTargetsWithSymbol)
+        for targetState in newStateTargetsWithSymbol:
+          newStateTargetsWithSymbol = UnionOfLists(newStateTargetsWithSymbol, epsilonClosure[targetState.id])
+      for state in newStateTargetsWithSymbol:
+        newState.addTransition(symbol, state) 
+    # Com estado criado (com as devidas transições),
+    # vejamos se ele é estado final ou não e adicionamos à lista de estados
+    self.states.append(newState)
+    if (len([i for i in targetList if i in self.finalStates]) > 0):
+      self.finalStates.append(newState)
+    return newState
 
   def calculateEpsilonClosure(self):
     epsilonClosure: Dict[str, Set[State]] = {}

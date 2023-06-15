@@ -16,6 +16,12 @@ class State:
     else:
       self.transitions[symbol].append(target)
   
+  def addNonExistingTransition(self, symbol: str, target: 'State'):
+    if symbol not in self.transitions:
+      self.transitions[symbol] = [target]
+    elif(target not in self.transitions[symbol]):
+        self.transitions[symbol].append(target)
+
   def getTransitionBySymbol(self, symbol: str):
     if symbol in self.transitions:
       return self.transitions[symbol]
