@@ -113,6 +113,14 @@ def GLCisDet():
   fileName = sys.argv[2]
   glc = readFile(fileName)
   print(glc.isDet())
+
+def GLCDet():
+  fileName = sys.argv[2]
+  glc = readFile(fileName)
+  if(glc.isDet()):
+    print("Esta gramática já é determinística")
+    return 
+  glc.determinize()
   
 
 def main():
@@ -139,4 +147,6 @@ def main():
     return AFIntersection()
   if function == "GLC-isDet":
     return GLCisDet()
+  if function == "GLC-det":
+    return GLCDet()
 main()
