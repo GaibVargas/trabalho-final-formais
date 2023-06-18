@@ -1,0 +1,7 @@
+GR
+b,c,d
+S,B,D
+S
+S bcD Bcd
+B bB b
+D dD d
