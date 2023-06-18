@@ -1,7 +1,7 @@
 import importlib
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Tuple
 from classes.State import State
-from utils.utils import getStateById
+from utils.utils import getStateById, getRepeatedElementsOfAList
 
 class GR:
   def __init__(
@@ -205,7 +205,7 @@ class GR:
     deterministic = self.isIndirectlyDeterministic()[0]
     return deterministic
   
-  def isIndirectlyDeterministic(self) -> tuple:
+  def isIndirectlyDeterministic(self) -> Tuple[bool, Dict[str, List[str]]]:
     #   Checa se uma GLC é determinante DIRETA E INDIRETAMENTE
     #   Retorna uma tupla com o resultado booleano e a estrutura
     # de dados que nos diz com que símbolo terminal começa cada produção
@@ -258,10 +258,10 @@ class GR:
     #for i in range(len(self.productions.items())):
 
   
-  def isDirectlyDeterministic(self) -> tuple:
+  def isDirectlyDeterministic(self) -> Tuple[bool, Dict[str, List[str]]]:
     #   Retorna uma tupla do tipo (bool, Dict[str,List[str]])
     #   Esta tupla nos diz se é diretamente deterministica ou não, e nos
-    # dá a estrutura com os terminais iniciais de cada uma das cabeças de produção (apenas diretamente)
+    # dá a estrutura com os terminais iniciais de cada uma das cabeças de produção (apenas diretamente) e com repetição onde há não determinismo
     startsWith: Dict[str, List[str]] = {}
     boolAnswer: bool = True
     for head in self.productions:
@@ -275,10 +275,73 @@ class GR:
           else:
             if(first in startsWith[head]):
               boolAnswer = False
-            else:
-              startsWith[head].append(first)
+            startsWith[head].append(first)
     return boolAnswer, startsWith
   
+  def determinize(self):
+    # Determiniza uma GR
+    attempts = 0
+    while(not self.isIndirectlyDeterministic()[0] and attempts <= 10):
+      attempts += 1
+      self.removeDirectNonDeterminism()
+      self.removeIndirectNonDeterminism()
+    print(self)
+  
+  def removeDirectNonDeterminism(self):
+    # Remove não-determinismo direto da gramática
+    deterministic, startsWith = self.isDirectlyDeterministic()
+    if(deterministic):
+      return
+    for head, firstTerminals in startsWith.items():
+      repeatedList = getRepeatedElementsOfAList(firstTerminals)
+      for repeated in repeatedList:
+        newState = head
+        while(newState in self.nTerminals):
+          newState += "'"
+        self.nTerminals.append(newState)
+        removedProductions: List[str] = []
+        for production in self.productions[head]:
+          if(production[0] == repeated):
+            removedProductions.append(production)
+        for index,production in enumerate(removedProductions):
+          self.productions[head].remove(production)
+          if(removedProductions[index] == repeated):
+            removedProductions[index] = '&'
+            continue
+          removedProductions[index] = production[1:len(production)]
+        for production in removedProductions:
+          if(newState not in self.productions):
+            self.productions[newState] = [production]
+          else:
+            self.productions[newState].append(production)
+        self.productions[head].append(repeated+newState)
+
+  def removeIndirectNonDeterminism(self):
+    # Remove não-determinismo indireto da gramática
+    deterministic, startsWith = self.isIndirectlyDeterministic()
+    if(deterministic):
+      return
+    for head, firstTerminals in startsWith.items():
+      repeatedList: List[str] = getRepeatedElementsOfAList(firstTerminals)
+      if(len(repeatedList) == 0):
+        continue
+      # Cabeça problemática
+      for repeated in repeatedList:
+        removedProductions: List[str] = []
+        for production in self.productions[head]:
+          firstSymbol = production[0]
+          if(firstSymbol in startsWith):
+            if(repeated in startsWith[firstSymbol]):
+              # Pegar as producoes de firstSymbol e jogar pras de Head
+              #self.productions[head].extend(self.productions[firstSymbol])
+              removedProductions.append(production)
+              for producaoDeFirstSymbol in self.productions[firstSymbol]:
+                if(producaoDeFirstSymbol+production[1:len(production)] in self.productions[head]):
+                  continue
+                self.productions[head].append(producaoDeFirstSymbol+production[1:len(production)])
+        for production in removedProductions:
+          self.productions[head].remove(production)
+
   def __str__(self):
     productions = ''
     for head, body in self.productions.items():

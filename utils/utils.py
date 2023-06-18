@@ -1,7 +1,9 @@
 import sys
 import time
-from typing import List, Set
+from typing import List, Set, TypeVar
 from classes.State import State
+
+T = TypeVar('T')
 
 def getStateById(states: List[State], id: str):
   for state in states:
@@ -38,7 +40,7 @@ def getDeterministicTargetId(targetList: List[State]) -> State:
     targetId = "".join(targetIdList)
     return targetId
 
-def UnionOfLists(list1: List[any], list2: List[any]):
+def UnionOfLists(list1: List[T], list2: List[T]) -> List[T]:
     try:
       final_list = list(set(list1) | set(list2))
     except:
@@ -46,6 +48,15 @@ def UnionOfLists(list1: List[any], list2: List[any]):
         return list1
       return list2
     return final_list
+
+def getRepeatedElementsOfAList(lista: List[T]) -> List[T]:
+  visited: List[T] = []
+  repeated: Set[T] = set()
+  for element in lista:
+    if(element in visited):
+      repeated.add(element)
+    visited.append(element)
+  return list(repeated)
 
 def archivePrint(filename: str, content):
   dir = 'results'
