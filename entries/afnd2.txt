@@ -1,0 +1,13 @@
+AF
+0,1
+P,Q,R,S
+P
+S
+P 0 P
+P 0 Q
+P 1 P
+Q 0 R
+Q 1 R
+R 0 S
+S 0 S
+S 1 S

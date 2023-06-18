@@ -16,6 +16,12 @@ class State:
     else:
       self.transitions[symbol].append(target)
   
+  def addNonExistingTransition(self, symbol: str, target: 'State'):
+    if symbol not in self.transitions:
+      self.transitions[symbol] = [target]
+    elif(target not in self.transitions[symbol]):
+        self.transitions[symbol].append(target)
+
   def getTransitionBySymbol(self, symbol: str):
     if symbol in self.transitions:
       return self.transitions[symbol]
@@ -27,8 +33,13 @@ class State:
       response += f'\t({self.id}, {symbol}): {list(map(lambda x: x.id, transitions))}\n'
     return response
   
+  def overwriteTransition(self, symbol: str, newTarget: 'State'):
+      self.transitions[symbol] = [newTarget]
+
+
   def stringify(self):
     return self.stringifyTransitions()
 
   def __lt__(self, other: 'State'):
     return self.id < other.id
+  
