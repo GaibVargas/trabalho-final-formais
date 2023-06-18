@@ -64,7 +64,7 @@ def AFDet():
   fileName = sys.argv[2]
   af = readFile(fileName)
   af.determinize()
-  print(af)
+  archivePrint('af', af)
 
 def AFTest():
   fileName = sys.argv[2]
@@ -73,8 +73,7 @@ def AFTest():
     word = sys.argv[3]
 
   af = readFile(fileName)
-  # TODO: determinizar antes
-  #af.determinize()
+  af.determinize()
   af.minimize()
   test = af.test(word)
 
@@ -97,7 +96,7 @@ def AFUnion():
   afOne = readFile(fileOneName)
   afTwo = readFile(fileTwoName)
   union = afOne.union(afTwo)
-  print(union)
+  archivePrint('af', union)
 
 def AFIntersection():
   fileOneName = sys.argv[2]
@@ -108,7 +107,7 @@ def AFIntersection():
   afComplementTwo = afTwo.complement()
   unionOfComplement = afComplementOne.union(afComplementTwo)
   unionOfComplement.determinize()
-  print(unionOfComplement.complement())
+  archivePrint('af', unionOfComplement.complement())
 
 def main():
   function = sys.argv[1]
