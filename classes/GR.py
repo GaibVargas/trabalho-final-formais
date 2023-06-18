@@ -195,12 +195,11 @@ class GR:
   def __str__(self):
     productions = ''
     for head, body in self.productions.items():
-      productions += f"\t{head} -> {body}\n"
+      productions += f"\n{head} {' '.join(body)}"
     return (
-      "\nGRAMÁTICA\n"
-      f"Terminais: {self.terminals}\n"
-      f"Não terminais: {self.nTerminals}\n"
-      f"Produção inicial: {self.initial}\n"
-      "Produções:\n"
+      "GR\n"
+      f"{','.join(self.terminals)}\n"
+      f"{','.join(self.nTerminals)}\n"
+      f"{self.initial}"
       f"{productions}"
     )

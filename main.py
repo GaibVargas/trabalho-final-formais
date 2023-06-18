@@ -1,5 +1,6 @@
 import sys
 from classes.Parser import Parser
+from utils.utils import archivePrint
 
 def readAF(content):
   alphabet, states, initial, finals, *transitions = content
@@ -34,37 +35,36 @@ def readFile(fileName):
 def AFPrint():
   fileName = sys.argv[2]
   response = readFile(fileName)
-  print(response)
+  archivePrint('af', response)
 
 def GRPrint():
   fileName = sys.argv[2]
   response = readFile(fileName)
-  print(response)
+  archivePrint('gr', response)
 
 def GRToAF():
   fileName = sys.argv[2]
   grammar = readFile(fileName)
   af = grammar.parseToAF()
-  print(grammar)
-  print(af)
+  archivePrint('af', af)
 
 def AFToGR():
   fileName = sys.argv[2]
   af = readFile(fileName)
   grammar = af.parseToGR()
-  print(af)
-  print(grammar)
+  archivePrint('gr', grammar)
 
 def AFMin():
   fileName = sys.argv[2]
   af = readFile(fileName)
   af.minimize()
-  print(af)
+  archivePrint('af', af)
 
 def AFDet():
   fileName = sys.argv[2]
   af = readFile(fileName)
   af.determinize()
+  archivePrint('af', af)
 
 def AFTest():
   fileName = sys.argv[2]
@@ -73,7 +73,7 @@ def AFTest():
     word = sys.argv[3]
 
   af = readFile(fileName)
-  # TODO: determinizar antes
+  af.determinize()
   af.minimize()
   test = af.test(word)
 
@@ -89,6 +89,25 @@ def LL():
   print(f'First: {first}')
   follow = gr.follow()
   print(f'Follow: {follow}')
+
+def AFUnion():
+  fileOneName = sys.argv[2]
+  fileTwoName = sys.argv[3]
+  afOne = readFile(fileOneName)
+  afTwo = readFile(fileTwoName)
+  union = afOne.union(afTwo)
+  archivePrint('af', union)
+
+def AFIntersection():
+  fileOneName = sys.argv[2]
+  fileTwoName = sys.argv[3]
+  afOne = readFile(fileOneName)
+  afTwo = readFile(fileTwoName)
+  afComplementOne = afOne.complement()
+  afComplementTwo = afTwo.complement()
+  unionOfComplement = afComplementOne.union(afComplementTwo)
+  unionOfComplement.determinize()
+  archivePrint('af', unionOfComplement.complement())
 
 def main():
   function = sys.argv[1]
@@ -108,5 +127,9 @@ def main():
     return LL()
   if function == "AF-det":
     return AFDet()
+  if function == "AF-union":
+    return AFUnion()
+  if function == "AF-intersection":
+    return AFIntersection()
 
 main()

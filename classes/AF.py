@@ -20,24 +20,40 @@ class AF:
   def parseToGR(self):
     GRModule = importlib.import_module('classes.GR')
     GR = GRModule.GR
-    # TODO: primeiro determinizar o autômato e minimizá-lo
+    self.determinize()
+    self.minimize()
+
+    # mapeia nome dos estados para letras alfabeto
+    possibleNonTerminals = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+    mapStateNonTerminal: Dict[str, str] = {}
+    idx = 0
+    for state in self.states:
+      mapStateNonTerminal[state.id] = possibleNonTerminals[idx]
+      idx += 1
+      if (idx > 25):
+        print('Erro: Há mais estados do que é possível representar símbolos não terminais de uma gramática')
+        sys.exit(1)
+
     productions: Dict[str, List[str]] = {}
     for state in self.states:
       for symbol, body in state.transitions.items():
         for target in body:
-          if state.id not in productions:
-            productions[state.id] = [f'{symbol}{target.id}']
+          originId = mapStateNonTerminal[state.id]
+          targetId = mapStateNonTerminal[target.id]
+          if originId not in productions:
+            productions[originId] = [f'{symbol}{targetId}']
           else:
-            productions[state.id].append(f'{symbol}{target.id}')
+            productions[originId].append(f'{symbol}{targetId}')
           if target in self.finalStates:
-            productions[state.id].append(symbol)
+            productions[originId].append(symbol)
     
-    nTerminals = list(map(lambda x: x.id, self.states))
-    initialProducion = self.initialState.id
+    nTerminals = list(map(lambda x: mapStateNonTerminal[x.id], self.states))
+    initialProducion = mapStateNonTerminal[self.initialState.id]
     if self.initialState in self.finalStates:
-      productions['Inicial'] = [*productions[self.initialState.id], '&']
-      initialProducion = 'Inicial'
-      nTerminals.append('Inicial')
+      newInitialProduction = possibleNonTerminals[idx]
+      productions[newInitialProduction] = [*productions[mapStateNonTerminal[self.initialState.id]], '&']
+      initialProducion = newInitialProduction
+      nTerminals.append(newInitialProduction)
 
     return GR(
       self.alphabet.copy(),
@@ -163,11 +179,81 @@ class AF:
     self.determinizeWithoutEpsilon()
   
   def determinizeWithEpsilon(self):
-    #Calcular Epsilon Fecho
+    # Calcular Epsilon Fecho
     epsilonClosure = self.calculateEpsilonClosure()
+    # Definir novo estado inicial
+    self.excludeEpsilonFromExistingStates(epsilonClosure)
+    newInitialStateList = list(epsilonClosure[self.initialState.id])
+    newInitialId = getDeterministicTargetId(newInitialStateList)
+    if(not self.existsStateWithId(newInitialId)):
+      # Não existe estado com 'newInitialId'
+      newInitialState = self.createNewStateWithEpsilon(newInitialStateList, epsilonClosure)
+      self.initialState = newInitialState
+    else: 
+      # Já existe o estado com newInitialId
+      newInitialState = getStateById(self.states, newInitialId)
+      self.initialState = newInitialState
+    visited: List[State] = [self.initialState]
+    stack: List[State] = [self.initialState]
+    while(len(stack) > 0):
+      current = stack.pop(0)
+      for symbol in self.alphabet:
+        targetList = current.getTransitionBySymbol(symbol)
+        if(targetList == None):
+          continue
+        targetId = getDeterministicTargetId(targetList)
+        targetState: State = None
+        if(self.existsStateWithId(targetId)):
+          # Já existe o estado com 'targetId'
+          targetState = getStateById(self.states, targetId)
+        else:
+          # Não existe o estado com 'targetId'
+          targetState = self.createNewStateWithEpsilon(targetList, epsilonClosure)
+        if(targetState not in visited):
+          stack.append(targetState)
+          visited.append(targetState)
+    self.transformTransitionsIntoDeterministic()
+    self.removeUnreachableState()
+    # Aqui, eu tiro estados inalcançáveis da lista de estados finais
+    #TODO: falta tirar da lista de estados iniciais (se necessário). Ainda
+    # não fiz pq achei que talvez coubesse fazer isso em removeUnreachableState(). A discutir com o grupo 
+    for state in self.finalStates:
+      if state not in self.states:
+        self.finalStates.remove(state)
 
+  def excludeEpsilonFromExistingStates(self, epsilonClosure: dict[str, Set[State]]):
+    for state in self.states:
+      for symbol in self.alphabet:
+        targetList = state.getTransitionBySymbol(symbol)
+        if(targetList == None):
+          continue
+        for target in targetList:
+          targetList = UnionOfLists(targetList, list(epsilonClosure[target.id]))
+        for targetState in targetList:
+          state.addNonExistingTransition(symbol, targetState)
+      if(state.transitions.get("&") != None):
+        del state.transitions["&"]
+
+  def createNewStateWithEpsilon(self, targetList: List[State], epsilonClosure: dict[str, Set[State]]) -> State:
+    newId = getDeterministicTargetId(targetList)
+    newState = State(newId)
+    for symbol in self.alphabet:
+      newStateTargetsWithSymbol: List[State] = []
+      for state in targetList:  
+        newStateTargetsWithSymbol = UnionOfLists(state.getTransitionBySymbol(symbol), newStateTargetsWithSymbol)
+        for targetState in newStateTargetsWithSymbol:
+          newStateTargetsWithSymbol = UnionOfLists(newStateTargetsWithSymbol, epsilonClosure[targetState.id])
+      for state in newStateTargetsWithSymbol:
+        newState.addTransition(symbol, state) 
+    # Com estado criado (com as devidas transições),
+    # vejamos se ele é estado final ou não e adicionamos à lista de estados
+    self.states.append(newState)
+    if (len([i for i in targetList if i in self.finalStates]) > 0):
+      self.finalStates.append(newState)
+    return newState
 
   def calculateEpsilonClosure(self):
+    # Retorna o Épsilon fecho do autômato
     epsilonClosure: Dict[str, Set[State]] = {}
     for state in self.states:
       visited: List[State] = [state]
@@ -188,7 +274,6 @@ class AF:
     return epsilonClosure
   
   def determinizeWithoutEpsilon(self):
-
     visited: List[State] = [self.initialState]
     stack: List[State] = [self.initialState]
     while len(stack) > 0:
@@ -213,10 +298,7 @@ class AF:
     self.removeUnreachableState()
     for state in self.finalStates:
       if state not in self.states:
-        self.finalStates.remove(state)
-    print(self)
-    
-          
+        self.finalStates.remove(state)           
     
   def createNewState(self, targetList: List[State]) -> State:
     newId = getDeterministicTargetId(targetList)
@@ -257,7 +339,36 @@ class AF:
       if (state.getTransitionBySymbol('&') != None):
         return True
     return False
+  
+  def union(self, otherAF: 'AF'):
+    newAlphabet: List[str] = UnionOfLists(self.alphabet, otherAF.alphabet)
+    newInitialState: State = State('newStart')
+    newInitialState.addNonExistingTransition('&', self.initialState)
+    newInitialState.addNonExistingTransition('&', otherAF.initialState)
+    for state in otherAF.states:
+      state.id = f"!{state.id}"
+    newStates: List[State] = UnionOfLists(self.states, otherAF.states)
+    newStates.append(newInitialState)
+    newFinalStates = UnionOfLists(self.finalStates, otherAF.finalStates)
+    return AF(
+      newAlphabet,
+      newStates,
+      newInitialState,
+      newFinalStates
+    )
 
+  def complement(self):
+    newFinalStates: List[State] = []
+    for state in self.states:
+      if state not in self.finalStates:
+        newFinalStates.append(state)
+    return AF(
+      self.alphabet,
+      self.states,
+      self.initialState,
+      newFinalStates
+    )
+  
   def minimize(self):
     self.removeUnreachableState()
     self.removeDeadStates()    
@@ -281,10 +392,11 @@ class AF:
     for state in self.states:
       transicoes += state.stringify()
     return (
-      "\nAUTÔMATO FINITO\n"
-      f"Estados: {getIdsByStates(self.states)}\n"
-      f"Estado Inicial: {getIdByState(self.initialState)}\n"
-      f"Estados Finais: {getIdsByStates(self.finalStates)}\n"
-      f"Transições:\n"
+      "AF\n"
+      f"{','.join(self.alphabet)}\n"
+      f"{','.join(getIdsByStates(self.states))}\n"
+      f"{getIdByState(self.initialState)}\n"
+      f"{','.join(getIdsByStates(self.finalStates))}"
       f"{transicoes}"
     )
+  

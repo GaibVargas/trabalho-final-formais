@@ -1,3 +1,5 @@
+import sys
+import time
 from typing import List, Set
 from classes.State import State
 
@@ -29,7 +31,6 @@ def getOriginStatesFrom(states: List[State], target: State):
 
 def getDeterministicTargetId(targetList: List[State]) -> State:
     # Dada uma lista de estados, junta os ID's dos estados e retorna o ID resultante
-
     targetIdList: List[str] = []
     for targetState in targetList:
       targetIdList.append(targetState.id)
@@ -45,3 +46,12 @@ def UnionOfLists(list1: List[any], list2: List[any]):
         return list1
       return list2
     return final_list
+
+def archivePrint(filename: str, content):
+  dir = 'results'
+  prefix = int(time.time())
+  filename = f'{dir}/{prefix}-{filename}.txt'
+  with open(filename, 'w') as arquivo:
+    sys.stdout = arquivo
+    print(content)
+    sys.stdout = sys.__stdout__
