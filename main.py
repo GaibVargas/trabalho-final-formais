@@ -121,6 +121,7 @@ def GLCDet():
     print("Esta gramática já é determinística")
     return 
   glc.determinize()
+  archivePrint('glc', glc)
   
 
 def main():
