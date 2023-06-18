@@ -191,6 +191,31 @@ class GR:
       if dependent not in visited:
         self.applyHeadToBodyFollow(dependent, target, partialFollow, dependencies, visited)
 
+  def isDet(self) -> bool:
+    # Checa se uma GLC é determinante
+    self.isIndirectlyDeterministic()
+  
+  def isIndirectlyDeterministic(self) -> bool:
+    deterministic, startsWith = self.isDirectlyDeterministic()
+    
+  def isDirectlyDeterministic(self) -> tuple:
+    startsWith: Dict[str, List[str]] = {}
+    boolAnswer: bool = True
+    for head in self.productions:
+      for production in self.productions.get(head):
+        # Para cada cabeça de produção, pegamos cada uma das produções e checamos se o seu primeiro símbolo é terminal
+        first = production[0]
+        if(first in self.terminals):
+          # Se o primeiro símbolo for terminal, checamos se já houve outra produção da mesma cabeça que começa com o mesmo símbolo
+          if(head not in startsWith):
+            startsWith[head] = [first]
+          else:
+            if(first in startsWith[head]):
+              boolAnswer = False
+            else:
+              startsWith[head].append(first)
+    return boolAnswer, startsWith
+  
   def __str__(self):
     productions = ''
     for head, body in self.productions.items():

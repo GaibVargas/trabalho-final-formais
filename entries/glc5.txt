@@ -1,0 +1,9 @@
+GR
+a,c,d,e,f
+S,A,B,C,D
+S
+S AD BC
+A aC cC
+B aB dD
+C eC eA
+D fD AB

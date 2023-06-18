@@ -111,6 +111,11 @@ def AFIntersection():
   unionOfComplement.determinize()
   print(unionOfComplement.complement())
 
+def GLCisDet():
+  fileName = sys.argv[2]
+  glc = readFile(fileName)
+  glc.isDet()
+
 def main():
   function = sys.argv[1]
   if function == "AF-print":
@@ -133,5 +138,6 @@ def main():
     return AFUnion()
   if function == "AF-intersection":
     return AFIntersection()
-
+  if function == "GLC-isDet":
+    return GLCisDet()
 main()
