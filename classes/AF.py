@@ -20,24 +20,40 @@ class AF:
   def parseToGR(self):
     GRModule = importlib.import_module('classes.GR')
     GR = GRModule.GR
-    # TODO: primeiro determinizar o autômato e minimizá-lo
+    self.determinize()
+    self.minimize()
+
+    # mapeia nome dos estados para letras alfabeto
+    possibleNonTerminals = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+    mapStateNonTerminal: Dict[str, str] = {}
+    idx = 0
+    for state in self.states:
+      mapStateNonTerminal[state.id] = possibleNonTerminals[idx]
+      idx += 1
+      if (idx > 25):
+        print('Erro: Há mais estados do que é possível representar símbolos não terminais de uma gramática')
+        sys.exit(1)
+
     productions: Dict[str, List[str]] = {}
     for state in self.states:
       for symbol, body in state.transitions.items():
         for target in body:
-          if state.id not in productions:
-            productions[state.id] = [f'{symbol}{target.id}']
+          originId = mapStateNonTerminal[state.id]
+          targetId = mapStateNonTerminal[target.id]
+          if originId not in productions:
+            productions[originId] = [f'{symbol}{targetId}']
           else:
-            productions[state.id].append(f'{symbol}{target.id}')
+            productions[originId].append(f'{symbol}{targetId}')
           if target in self.finalStates:
-            productions[state.id].append(symbol)
+            productions[originId].append(symbol)
     
-    nTerminals = list(map(lambda x: x.id, self.states))
-    initialProducion = self.initialState.id
+    nTerminals = list(map(lambda x: mapStateNonTerminal[x.id], self.states))
+    initialProducion = mapStateNonTerminal[self.initialState.id]
     if self.initialState in self.finalStates:
-      productions['Inicial'] = [*productions[self.initialState.id], '&']
-      initialProducion = 'Inicial'
-      nTerminals.append('Inicial')
+      newInitialProduction = possibleNonTerminals[idx]
+      productions[newInitialProduction] = [*productions[mapStateNonTerminal[self.initialState.id]], '&']
+      initialProducion = newInitialProduction
+      nTerminals.append(newInitialProduction)
 
     return GR(
       self.alphabet.copy(),
@@ -376,11 +392,11 @@ class AF:
     for state in self.states:
       transicoes += state.stringify()
     return (
-      "\nAUTÔMATO FINITO\n"
-      f"Estados: {getIdsByStates(self.states)}\n"
-      f"Estado Inicial: {getIdByState(self.initialState)}\n"
-      f"Estados Finais: {getIdsByStates(self.finalStates)}\n"
-      f"Transições:\n"
+      "AF\n"
+      f"{','.join(self.alphabet)}\n"
+      f"{','.join(getIdsByStates(self.states))}\n"
+      f"{getIdByState(self.initialState)}\n"
+      f"{','.join(getIdsByStates(self.finalStates))}"
       f"{transicoes}"
     )
   

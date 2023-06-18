@@ -1,0 +1,7 @@
+GR
+*,=,i
+S,L,R
+S
+S L=R R
+L *R i
+R L

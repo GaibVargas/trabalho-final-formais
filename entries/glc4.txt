@@ -1,7 +1,0 @@
-GR
-a,b
-S,A,B
-S
-S AB
-A aA &
-B bB &

@@ -182,14 +182,15 @@ class GR:
     origin: str,
     partialFollow: Dict[str, Set[str]],
     dependencies: Dict[str, Set[str]],
-    visited: List[str] = [],
   ):
-    visited.append(target)
-    partialFollow[target] = partialFollow[target].union(partialFollow[origin])
+    old = partialFollow[target]
+    new = partialFollow[target].union(partialFollow[origin])
+    if (len(new.difference(old)) == 0):
+      return
+    partialFollow[target] = new
     dependents = dependencies[target]
     for dependent in dependents:
-      if dependent not in visited:
-        self.applyHeadToBodyFollow(dependent, target, partialFollow, dependencies, visited)
+      self.applyHeadToBodyFollow(dependent, target, partialFollow, dependencies)
 
   def isDet(self) -> bool:
     # Checa se uma GLC é determinante
@@ -219,12 +220,11 @@ class GR:
   def __str__(self):
     productions = ''
     for head, body in self.productions.items():
-      productions += f"\t{head} -> {body}\n"
+      productions += f"\n{head} {' '.join(body)}"
     return (
-      "\nGRAMÁTICA\n"
-      f"Terminais: {self.terminals}\n"
-      f"Não terminais: {self.nTerminals}\n"
-      f"Produção inicial: {self.initial}\n"
-      "Produções:\n"
+      "GR\n"
+      f"{','.join(self.terminals)}\n"
+      f"{','.join(self.nTerminals)}\n"
+      f"{self.initial}"
       f"{productions}"
     )
