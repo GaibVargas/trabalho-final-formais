@@ -112,7 +112,8 @@ def AFIntersection():
 def GLCisDet():
   fileName = sys.argv[2]
   glc = readFile(fileName)
-  glc.isDet()
+  print(glc.isDet())
+  
 
 def main():
   function = sys.argv[1]

@@ -193,13 +193,67 @@ class GR:
       self.applyHeadToBodyFollow(dependent, target, partialFollow, dependencies)
 
   def isDet(self) -> bool:
-    # Checa se uma GLC é determinante
-    self.isIndirectlyDeterministic()
+    #   Checa se uma GLC é determinante
+    deterministic = self.isIndirectlyDeterministic()[0]
+    return deterministic
   
-  def isIndirectlyDeterministic(self) -> bool:
-    deterministic, startsWith = self.isDirectlyDeterministic()
+  def isIndirectlyDeterministic(self) -> tuple:
+    #   Checa se uma GLC é determinante DIRETA E INDIRETAMENTE
+    #   Retorna uma tupla com o resultado booleano e a estrutura
+    # de dados que nos diz com que símbolo terminal começa cada produção
+    deterministic, startsWithDirectly = self.isDirectlyDeterministic()
+    startsWithIndirectly: Dict[str, List[str]] = startsWithDirectly
+    if(not deterministic):
+      deterministic = False
+    for head in self.productions:
+      for production in self.productions.get(head):
+        firstSymbol = production[0]
+        if(firstSymbol in self.terminals):
+          continue
+        if(head not in startsWithIndirectly):
+          startsWithIndirectly[head] = [firstSymbol]
+        else:
+          if(firstSymbol in startsWithIndirectly[head]):
+            deterministic = False
+          startsWithIndirectly[head].append(firstSymbol)
+    allFirstSymbols = set()
+    for firstProductionList in startsWithIndirectly.values():
+      for symbol in firstProductionList:
+        allFirstSymbols.add(symbol)
+    finished: bool = True
+    for nTerminal in self.nTerminals:
+      if(nTerminal in allFirstSymbols):
+        finished = False
+    timesAttempted = 0
+    while((not finished) and (timesAttempted <= len(self.productions.items()))):
+      timesAttempted += 1
+      for head in startsWithIndirectly:
+        for symbol in startsWithIndirectly[head]:
+          if(symbol in self.nTerminals):
+            startsWithIndirectly[head].remove(symbol)
+            for newSymbol in startsWithIndirectly[symbol]:
+              if(newSymbol in startsWithIndirectly[head]):
+                deterministic = False
+            startsWithIndirectly[head].extend(startsWithIndirectly[symbol])
+            
+      allFirstSymbols = set()
+      for firstProductionList in startsWithIndirectly.values():
+        for symbol in firstProductionList:
+          allFirstSymbols.add(symbol)
+      finished: bool = True
+      for nTerminal in self.nTerminals:
+        if(nTerminal in allFirstSymbols):
+          finished = False
     
+    
+    return deterministic, startsWithIndirectly
+    #for i in range(len(self.productions.items())):
+
+  
   def isDirectlyDeterministic(self) -> tuple:
+    #   Retorna uma tupla do tipo (bool, Dict[str,List[str]])
+    #   Esta tupla nos diz se é diretamente deterministica ou não, e nos
+    # dá a estrutura com os terminais iniciais de cada uma das cabeças de produção (apenas diretamente)
     startsWith: Dict[str, List[str]] = {}
     boolAnswer: bool = True
     for head in self.productions:
