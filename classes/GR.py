@@ -285,7 +285,12 @@ class GR:
       attempts += 1
       self.removeDirectNonDeterminism()
       self.removeIndirectNonDeterminism()
-    print(self)
+    if(not self.isIndirectlyDeterministic()[0]):
+      print("--------------------------------------------------")
+      print("A DETERMINIZAÇÃO ENTROU EM LOOP QUANDO ESTAVA NA")
+      print("GRAMÁTICA ACIMA")
+      print("--------------------------------------------------")
+      exit(-1)
   
   def removeDirectNonDeterminism(self):
     # Remove não-determinismo direto da gramática
