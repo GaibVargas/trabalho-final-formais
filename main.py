@@ -1,5 +1,6 @@
 import sys
 from classes.Parser import Parser
+from utils.utils import archivePrint
 
 def readAF(content):
   alphabet, states, initial, finals, *transitions = content
@@ -34,38 +35,36 @@ def readFile(fileName):
 def AFPrint():
   fileName = sys.argv[2]
   response = readFile(fileName)
-  print(response)
+  archivePrint('af', response)
 
 def GRPrint():
   fileName = sys.argv[2]
   response = readFile(fileName)
-  print(response)
+  archivePrint('gr', response)
 
 def GRToAF():
   fileName = sys.argv[2]
   grammar = readFile(fileName)
   af = grammar.parseToAF()
-  print(grammar)
-  print(af)
+  archivePrint('af', af)
 
 def AFToGR():
   fileName = sys.argv[2]
   af = readFile(fileName)
   grammar = af.parseToGR()
-  print(af)
-  print(grammar)
+  archivePrint('gr', grammar)
 
 def AFMin():
   fileName = sys.argv[2]
   af = readFile(fileName)
   af.minimize()
-  print(af)
+  archivePrint('af', af)
 
 def AFDet():
   fileName = sys.argv[2]
   af = readFile(fileName)
   af.determinize()
-  print(af)
+  archivePrint('af', af)
 
 def AFTest():
   fileName = sys.argv[2]
@@ -74,8 +73,7 @@ def AFTest():
     word = sys.argv[3]
 
   af = readFile(fileName)
-  # TODO: determinizar antes
-  #af.determinize()
+  af.determinize()
   af.minimize()
   test = af.test(word)
 
@@ -98,7 +96,7 @@ def AFUnion():
   afOne = readFile(fileOneName)
   afTwo = readFile(fileTwoName)
   union = afOne.union(afTwo)
-  print(union)
+  archivePrint('af', union)
 
 def AFIntersection():
   fileOneName = sys.argv[2]
@@ -109,7 +107,7 @@ def AFIntersection():
   afComplementTwo = afTwo.complement()
   unionOfComplement = afComplementOne.union(afComplementTwo)
   unionOfComplement.determinize()
-  print(unionOfComplement.complement())
+  archivePrint('af', unionOfComplement.complement())
 
 def main():
   function = sys.argv[1]
