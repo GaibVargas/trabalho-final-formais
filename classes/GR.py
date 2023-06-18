@@ -200,6 +200,6 @@ class GR:
       "GR\n"
       f"{','.join(self.terminals)}\n"
       f"{','.join(self.nTerminals)}\n"
-      f"{','.join(self.initial)}"
+      f"{self.initial}"
       f"{productions}"
     )
