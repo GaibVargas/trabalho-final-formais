@@ -376,11 +376,11 @@ class AF:
     for state in self.states:
       transicoes += state.stringify()
     return (
-      "\nAUTÔMATO FINITO\n"
-      f"Estados: {getIdsByStates(self.states)}\n"
-      f"Estado Inicial: {getIdByState(self.initialState)}\n"
-      f"Estados Finais: {getIdsByStates(self.finalStates)}\n"
-      f"Transições:\n"
+      "AF\n"
+      f"{','.join(self.alphabet)}\n"
+      f"{','.join(getIdsByStates(self.states))}\n"
+      f"{','.join(getIdByState(self.initialState))}\n"
+      f"{','.join(getIdsByStates(self.finalStates))}"
       f"{transicoes}"
     )
   

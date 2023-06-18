@@ -30,7 +30,8 @@ class State:
   def stringifyTransitions(self):
     response = ""
     for symbol, transitions in self.transitions.items():
-      response += f'\t({self.id}, {symbol}): {list(map(lambda x: x.id, transitions))}\n'
+      for transition in transitions:
+        response += f'\n{self.id} {symbol} {transition.id}'
     return response
   
   def overwriteTransition(self, symbol: str, newTarget: 'State'):
