@@ -325,17 +325,27 @@ class GR:
       # Cabeça problemática
       for repeated in repeatedList:
         removedProductions: List[str] = []
+        attempts = 0
         for production in self.productions[head]:
           firstSymbol = production[0]
+          attempts += 1
+          if(attempts>=50):
+            print("--------------------------------------------------")
+            print("A DETERMINIZAÇÃO ENTROU EM LOOP")
+            print("--------------------------------------------------")
+            exit(-1)
           if(firstSymbol in startsWith):
             if(repeated in startsWith[firstSymbol]):
               # Pegar as producoes de firstSymbol e jogar pras de Head
               #self.productions[head].extend(self.productions[firstSymbol])
               removedProductions.append(production)
               for producaoDeFirstSymbol in self.productions[firstSymbol]:
-                if(producaoDeFirstSymbol+production[1:len(production)] in self.productions[head]):
+                novaProducao = producaoDeFirstSymbol+production[1:len(production)]
+                if((novaProducao != "&") and ("&" in novaProducao)):
+                  novaProducao = novaProducao.replace("&",'')
+                if(novaProducao in self.productions[head]):
                   continue
-                self.productions[head].append(producaoDeFirstSymbol+production[1:len(production)])
+                self.productions[head].append(novaProducao)
         for production in removedProductions:
           self.productions[head].remove(production)
 
