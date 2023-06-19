@@ -1,0 +1,8 @@
+GR
+d,c,m,;
+P,D,L,C
+P
+P DL L
+D dD &
+L L;C C
+C cmd; &
