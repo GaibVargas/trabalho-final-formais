@@ -364,8 +364,7 @@ class GR:
       table[nTerminal] = {}
     for nTerminal in self.nTerminals:
         for production in self.productions[nTerminal]:
-          
-    print(table)
+          pass
   def __str__(self):
     productions = ''
     for head, body in self.productions.items():
