@@ -357,6 +357,23 @@ class GR:
         for production in removedProductions:
           self.productions[head].remove(production)
 
+  def LL1Table(self):
+    
+    table: Dict[str, Dict[str,str]] = {}
+    first = self.first()
+    follow = {
+      'E': {"$"},
+      "Y": {"$"},
+      "T": {"$","+"},
+      "X": {"$","+"},
+      "F": {"$","+","*"}
+    }
+    for nTerminal in self.nTerminals:
+      table[nTerminal] = {}
+    for nTerminal in self.nTerminals:
+        for production in self.productions[nTerminal]:
+          
+    print(table)
   def __str__(self):
     productions = ''
     for head, body in self.productions.items():
