@@ -123,7 +123,12 @@ def GLCDet():
   glc.determinize()
   archivePrint('glc', glc)
   
-
+def LL1Table():
+  fileName = sys.argv[2]
+  glc = readFile(fileName)
+  #   TODO: Tirar recursão, determinizar e checar intersecção de 
+  # Firsts e Follows para cada um dos não-terminais
+  table = glc.LL1Table()
 def main():
   function = sys.argv[1]
   if function == "AF-print":
@@ -150,4 +155,6 @@ def main():
     return GLCisDet()
   if function == "GLC-det":
     return GLCDet()
+  if function == "LL1-table":
+    return LL1Table()
 main()
