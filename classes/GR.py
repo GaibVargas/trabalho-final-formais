@@ -361,18 +361,34 @@ class GR:
     
     table: Dict[str, Dict[str,str]] = {}
     first = self.first()
-    follow = {
-      'E': {"$"},
-      "Y": {"$"},
-      "T": {"$","+"},
-      "X": {"$","+"},
-      "F": {"$","+","*"}
-    }
+    follow = self.follow()
     for nTerminal in self.nTerminals:
       table[nTerminal] = {}
     for nTerminal in self.nTerminals:
         for production in self.productions[nTerminal]:
-          pass
+          if(production != "&"):
+            for firstOfProduction in self.firstOfProduction(production, first):
+              table[nTerminal][firstOfProduction] = production
+          else:
+            for followOfHead in follow[nTerminal]:
+              table[nTerminal][followOfHead] = production
+    return table
+          
+  
+  def firstOfProduction(self, production: str, firstList) -> Set[str]:
+    if(production[0] in self.terminals):
+      return set([production[0]])
+    firstOfProductionReturn: Set[str] = set()
+    for first in firstList[production[0]]:
+      if(first != "&"):
+        firstOfProductionReturn.add(first)  
+    if("&" in firstList[production[0]]):
+      if(len(production) <= 1):
+        firstOfProductionReturn.add("&")
+      else:
+        firstOfProductionReturn.union(self.firstOfProduction(production[1:len(production)], firstList))
+    return firstOfProductionReturn
+  
   def __str__(self):
     productions = ''
     for head, body in self.productions.items():
