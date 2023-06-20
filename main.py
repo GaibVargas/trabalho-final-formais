@@ -1,5 +1,6 @@
 import sys
 from classes.Parser import Parser
+from classes.Table import Table
 from utils.utils import archivePrint
 
 def readAF(content):
@@ -128,7 +129,9 @@ def LL1Table():
   glc = readFile(fileName)
   #   TODO: Tirar recursão, determinizar e checar intersecção de 
   # Firsts e Follows para cada um dos não-terminais
-  table = glc.LL1Table()
+  table = Table(glc.LL1Table())
+  print(table)
+  
 def main():
   function = sys.argv[1]
   if function == "AF-print":
