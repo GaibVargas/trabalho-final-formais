@@ -1,10 +1,10 @@
 GR
 a,c,d,e,f
-S,A,B,C,C',D
+S,A,B,C,E,D
 S
 S AD BC a
 A aC cC
 B AB dD
-C eC'
-C' C A
+C eE
+E C A
 D fD AB
