@@ -280,6 +280,7 @@ class GR:
   
   def determinize(self):
     # Determiniza uma GR
+    # Antes de determinizar a gramática PRECISA TIRAR RECURSÃO À ESQUERDA
     attempts = 0
     while(not self.isIndirectlyDeterministic()[0] and attempts <= 10):
       attempts += 1
@@ -300,9 +301,16 @@ class GR:
     for head, firstTerminals in startsWith.items():
       repeatedList = getRepeatedElementsOfAList(firstTerminals)
       for repeated in repeatedList:
-        newState = head
-        while(newState in self.nTerminals):
-          newState += "'"
+        possibleNTerminals = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+        newState = None
+        for possibleNTerminal in possibleNTerminals:
+          if(possibleNTerminal not in self.nTerminals):
+            newState = possibleNTerminal
+            break
+        if(newState == None):
+          print(self.nTerminals)
+          print('Erro: Há mais estados do que é possível representar símbolos não terminais de uma gramática')
+          exit(-1)
         self.nTerminals.append(newState)
         removedProductions: List[str] = []
         for production in self.productions[head]:
