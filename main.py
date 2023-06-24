@@ -32,16 +32,6 @@ def readFile(fileName):
       return readGR(content)
     print('Tipo de arquivo desconhecido')
 
-def AFPrint():
-  fileName = sys.argv[2]
-  response = readFile(fileName)
-  archivePrint('af', response)
-
-def GRPrint():
-  fileName = sys.argv[2]
-  response = readFile(fileName)
-  archivePrint('gr', response)
-
 def GRToAF():
   fileName = sys.argv[2]
   grammar = readFile(fileName)
@@ -111,25 +101,21 @@ def AFIntersection():
 
 def main():
   function = sys.argv[1]
-  if function == "AF-print":
-    return AFPrint()
-  if function == "GR-print":
-    return GRPrint()
-  if function == "GR-AF":
-    return GRToAF()
-  if function == "AF-GR":
-    return AFToGR()
-  if function == "AF-min":
-    return AFMin()
-  if function == "AF-test":
-    return AFTest()
-  if function == "LL":
-    return LL()
   if function == "AF-det":
     return AFDet()
+  if function == "AF-GR":
+    return AFToGR()
+  if function == "GR-AF":
+    return GRToAF()
+  if function == "AF-min":
+    return AFMin()
   if function == "AF-union":
     return AFUnion()
   if function == "AF-intersection":
     return AFIntersection()
+  if function == "AF-test":
+    return AFTest()
+  if function == "LL":
+    return LL()
 
 main()

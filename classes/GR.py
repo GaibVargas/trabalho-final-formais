@@ -116,6 +116,14 @@ class GR:
           nextSymbol = production[i + 1]
           if symbol in self.nTerminals and nextSymbol in self.terminals:
             partialFollow[symbol].add(nextSymbol)
+            auxSymbol = symbol
+            auxIdx = i - 1
+            while ('&' in self._first[auxSymbol] and auxIdx >= 0):
+              auxSymbol = production[auxIdx]
+              if auxSymbol not in self.nTerminals:
+                break
+              partialFollow[auxSymbol].add(nextSymbol)
+              auxIdx -= 1
     return partialFollow
 
   # Calcula follow para produções que contenham do tipo AB
