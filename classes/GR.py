@@ -366,7 +366,6 @@ class GR:
           self.productions[head].remove(production)
 
   def LL1Table(self):
-    
     table: Dict[str, Dict[str,str]] = {}
     first = self.first()
     follow = self.follow()
@@ -374,18 +373,20 @@ class GR:
       table[nTerminal] = {}
     for nTerminal in self.nTerminals:
         for production in self.productions[nTerminal]:
-          if(production != "&"):
-            for firstOfProduction in self.firstOfProduction(production, first):
+          for firstOfProduction in self.firstOfProduction(production, first):
+            if(firstOfProduction != "&"):
               table[nTerminal][firstOfProduction] = production
-          else:
-            for followOfHead in follow[nTerminal]:
-              table[nTerminal][followOfHead] = production
+            if("&" in firstOfProduction):
+              for followOfHead in follow[nTerminal]:
+                table[nTerminal][followOfHead] = production    
     return table
           
   
   def firstOfProduction(self, production: str, firstList) -> Set[str]:
     if(production[0] in self.terminals):
       return set([production[0]])
+    if(production == "&"):
+      return set(production)
     firstOfProductionReturn: Set[str] = set()
     for first in firstList[production[0]]:
       if(first != "&"):
@@ -394,7 +395,7 @@ class GR:
       if(len(production) <= 1):
         firstOfProductionReturn.add("&")
       else:
-        firstOfProductionReturn.union(self.firstOfProduction(production[1:len(production)], firstList))
+        firstOfProductionReturn = firstOfProductionReturn.union(self.firstOfProduction(production[1:len(production)], firstList))
     return firstOfProductionReturn
   
   def __str__(self):
