@@ -3,6 +3,7 @@ from classes.Parser import Parser
 from classes.Table import Table
 from classes.GR import GR
 from utils.utils import archivePrint
+from collections import OrderedDict
 
 def readAF(content):
   alphabet, states, initial, finals, *transitions = content
