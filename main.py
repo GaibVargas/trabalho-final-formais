@@ -1,5 +1,6 @@
 import sys
 from classes.Parser import Parser
+from classes.Table import Table
 from utils.utils import archivePrint
 
 def readAF(content):
@@ -99,6 +100,28 @@ def AFIntersection():
   unionOfComplement.determinize()
   archivePrint('af', unionOfComplement.complement())
 
+def GLCisDet():
+  fileName = sys.argv[2]
+  glc = readFile(fileName)
+  print(glc.isDet())
+
+def GLCDet():
+  fileName = sys.argv[2]
+  glc = readFile(fileName)
+  if(glc.isDet()):
+    print("Esta gramática já é determinística")
+    return 
+  glc.determinize()
+  archivePrint('glc', glc)
+  
+def LL1Table():
+  fileName = sys.argv[2]
+  glc = readFile(fileName)
+  #   TODO: Tirar recursão, determinizar e checar intersecção de 
+  # Firsts e Follows para cada um dos não-terminais
+  table = Table(glc.LL1Table())
+  print(table)
+  
 def main():
   function = sys.argv[1]
   if function == "AF-det":
@@ -117,5 +140,10 @@ def main():
     return AFTest()
   if function == "LL":
     return LL()
-
+  if function == "GLC-isDet":
+    return GLCisDet()
+  if function == "GLC-det":
+    return GLCDet()
+  if function == "LL1-table":
+    return LL1Table()
 main()

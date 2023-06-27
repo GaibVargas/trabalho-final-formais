@@ -1,7 +1,7 @@
 import importlib
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Tuple
 from classes.State import State
-from utils.utils import getStateById
+from utils.utils import getStateById, getRepeatedElementsOfAList
 
 class GR:
   def __init__(
@@ -200,6 +200,204 @@ class GR:
     for dependent in dependents:
       self.applyHeadToBodyFollow(dependent, target, partialFollow, dependencies)
 
+  def isDet(self) -> bool:
+    #   Checa se uma GLC é determinante
+    deterministic = self.isIndirectlyDeterministic()[0]
+    return deterministic
+  
+  def isIndirectlyDeterministic(self) -> Tuple[bool, Dict[str, List[str]]]:
+    #   Checa se uma GLC é determinante DIRETA E INDIRETAMENTE
+    #   Retorna uma tupla com o resultado booleano e a estrutura
+    # de dados que nos diz com que símbolo terminal começa cada produção
+    deterministic, startsWithDirectly = self.isDirectlyDeterministic()
+    startsWithIndirectly: Dict[str, List[str]] = startsWithDirectly
+    if(not deterministic):
+      deterministic = False
+    for head in self.productions:
+      for production in self.productions.get(head):
+        firstSymbol = production[0]
+        if(firstSymbol in self.terminals):
+          continue
+        if(head not in startsWithIndirectly):
+          startsWithIndirectly[head] = [firstSymbol]
+        else:
+          if(firstSymbol in startsWithIndirectly[head]):
+            deterministic = False
+          startsWithIndirectly[head].append(firstSymbol)
+    allFirstSymbols = set()
+    for firstProductionList in startsWithIndirectly.values():
+      for symbol in firstProductionList:
+        allFirstSymbols.add(symbol)
+    finished: bool = True
+    for nTerminal in self.nTerminals:
+      if(nTerminal in allFirstSymbols):
+        finished = False
+    timesAttempted = 0
+    while((not finished) and (timesAttempted <= len(self.productions.items()))):
+      timesAttempted += 1
+      for head in startsWithIndirectly:
+        for symbol in startsWithIndirectly[head]:
+          if(symbol in self.nTerminals):
+            startsWithIndirectly[head].remove(symbol)
+            for newSymbol in startsWithIndirectly[symbol]:
+              if(newSymbol in startsWithIndirectly[head]):
+                deterministic = False
+            startsWithIndirectly[head].extend(startsWithIndirectly[symbol])
+            
+      allFirstSymbols = set()
+      for firstProductionList in startsWithIndirectly.values():
+        for symbol in firstProductionList:
+          allFirstSymbols.add(symbol)
+      finished: bool = True
+      for nTerminal in self.nTerminals:
+        if(nTerminal in allFirstSymbols):
+          finished = False
+    
+    
+    return deterministic, startsWithIndirectly
+    #for i in range(len(self.productions.items())):
+
+  
+  def isDirectlyDeterministic(self) -> Tuple[bool, Dict[str, List[str]]]:
+    #   Retorna uma tupla do tipo (bool, Dict[str,List[str]])
+    #   Esta tupla nos diz se é diretamente deterministica ou não, e nos
+    # dá a estrutura com os terminais iniciais de cada uma das cabeças de produção (apenas diretamente) e com repetição onde há não determinismo
+    startsWith: Dict[str, List[str]] = {}
+    boolAnswer: bool = True
+    for head in self.productions:
+      for production in self.productions.get(head):
+        # Para cada cabeça de produção, pegamos cada uma das produções e checamos se o seu primeiro símbolo é terminal
+        first = production[0]
+        if(first in self.terminals):
+          # Se o primeiro símbolo for terminal, checamos se já houve outra produção da mesma cabeça que começa com o mesmo símbolo
+          if(head not in startsWith):
+            startsWith[head] = [first]
+          else:
+            if(first in startsWith[head]):
+              boolAnswer = False
+            startsWith[head].append(first)
+    return boolAnswer, startsWith
+  
+  def determinize(self):
+    # Determiniza uma GR
+    # Antes de determinizar a gramática PRECISA TIRAR RECURSÃO À ESQUERDA
+    attempts = 0
+    while(not self.isIndirectlyDeterministic()[0] and attempts <= 10):
+      attempts += 1
+      self.removeDirectNonDeterminism()
+      self.removeIndirectNonDeterminism()
+    if(not self.isIndirectlyDeterministic()[0]):
+      print("--------------------------------------------------")
+      print("A DETERMINIZAÇÃO ENTROU EM LOOP QUANDO ESTAVA NA")
+      print("GRAMÁTICA ACIMA")
+      print("--------------------------------------------------")
+      exit(-1)
+  
+  def removeDirectNonDeterminism(self):
+    # Remove não-determinismo direto da gramática
+    deterministic, startsWith = self.isDirectlyDeterministic()
+    if(deterministic):
+      return
+    for head, firstTerminals in startsWith.items():
+      repeatedList = getRepeatedElementsOfAList(firstTerminals)
+      for repeated in repeatedList:
+        possibleNTerminals = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+        newState = None
+        for possibleNTerminal in possibleNTerminals:
+          if(possibleNTerminal not in self.nTerminals):
+            newState = possibleNTerminal
+            break
+        if(newState == None):
+          print(self.nTerminals)
+          print('Erro: Há mais estados do que é possível representar símbolos não terminais de uma gramática')
+          exit(-1)
+        self.nTerminals.append(newState)
+        removedProductions: List[str] = []
+        for production in self.productions[head]:
+          if(production[0] == repeated):
+            removedProductions.append(production)
+        for index,production in enumerate(removedProductions):
+          self.productions[head].remove(production)
+          if(removedProductions[index] == repeated):
+            removedProductions[index] = '&'
+            continue
+          removedProductions[index] = production[1:len(production)]
+        for production in removedProductions:
+          if(newState not in self.productions):
+            self.productions[newState] = [production]
+          else:
+            self.productions[newState].append(production)
+        self.productions[head].append(repeated+newState)
+
+  def removeIndirectNonDeterminism(self):
+    # Remove não-determinismo indireto da gramática
+    deterministic, startsWith = self.isIndirectlyDeterministic()
+    if(deterministic):
+      return
+    for head, firstTerminals in startsWith.items():
+      repeatedList: List[str] = getRepeatedElementsOfAList(firstTerminals)
+      if(len(repeatedList) == 0):
+        continue
+      # Cabeça problemática
+      for repeated in repeatedList:
+        removedProductions: List[str] = []
+        attempts = 0
+        for production in self.productions[head]:
+          firstSymbol = production[0]
+          attempts += 1
+          if(attempts>=50):
+            print("--------------------------------------------------")
+            print("A DETERMINIZAÇÃO ENTROU EM LOOP")
+            print("--------------------------------------------------")
+            exit(-1)
+          if(firstSymbol in startsWith):
+            if(repeated in startsWith[firstSymbol]):
+              # Pegar as producoes de firstSymbol e jogar pras de Head
+              #self.productions[head].extend(self.productions[firstSymbol])
+              removedProductions.append(production)
+              for producaoDeFirstSymbol in self.productions[firstSymbol]:
+                novaProducao = producaoDeFirstSymbol+production[1:len(production)]
+                if((novaProducao != "&") and ("&" in novaProducao)):
+                  novaProducao = novaProducao.replace("&",'')
+                if(novaProducao in self.productions[head]):
+                  continue
+                self.productions[head].append(novaProducao)
+        for production in removedProductions:
+          self.productions[head].remove(production)
+
+  def LL1Table(self):
+    table: Dict[str, Dict[str,str]] = {}
+    first = self.first()
+    follow = self.follow()
+    for nTerminal in self.nTerminals:
+      table[nTerminal] = {}
+    for nTerminal in self.nTerminals:
+        for production in self.productions[nTerminal]:
+          for firstOfProduction in self.firstOfProduction(production, first):
+            if(firstOfProduction != "&"):
+              table[nTerminal][firstOfProduction] = production
+            if("&" in firstOfProduction):
+              for followOfHead in follow[nTerminal]:
+                table[nTerminal][followOfHead] = production    
+    return table
+          
+  
+  def firstOfProduction(self, production: str, firstList) -> Set[str]:
+    if(production[0] in self.terminals):
+      return set([production[0]])
+    if(production == "&"):
+      return set(production)
+    firstOfProductionReturn: Set[str] = set()
+    for first in firstList[production[0]]:
+      if(first != "&"):
+        firstOfProductionReturn.add(first)  
+    if("&" in firstList[production[0]]):
+      if(len(production) <= 1):
+        firstOfProductionReturn.add("&")
+      else:
+        firstOfProductionReturn = firstOfProductionReturn.union(self.firstOfProduction(production[1:len(production)], firstList))
+    return firstOfProductionReturn
+  
   def __str__(self):
     productions = ''
     for head, body in self.productions.items():
