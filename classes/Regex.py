@@ -1,241 +1,271 @@
-from classes.State import State
 from classes.AF import AF
+from classes.State import State
 
 class Node:
-    def __init__(self, left=None,right=None,data=None,father=None,first=None,fulfilled=None):
-        self.father = father
-        self.left = left
-        self.right = right
-        self.data = data
-        self.lastpos = None
-        self.firstpos = None
-        self.nullable = None
-        self.is_first_of_chain = first
-        self.fulfilled = fulfilled
+    def __init__(self, type, label, name=None, left_child=None, right_child=None):
+        self.name = name
+        self.type = type
+        self.left_child = left_child
+        self.right_child = right_child
+        self.label = label
+        self.nullable = False
+        self.firstpos = set()
+        self.lastpos = set()
 
-    def set_left(self, left):
-        self.left = left
+    def getId(self):
+        return self.name
 
-    def get_left(self):
-        return self.left
-    
-    def set_right(self, right):
-        self.right = right
+class Tree:
+    def __init__(self, post):
+        self.root = Node('cat', '.')
+        self.leaves = dict()
+        self.id_counter = 1
+        self.createTree(post)
+        self.followpos = [set() for i in range(self.id_counter)]
+        self.postorderNullableFirstposLastposFollowpos(self.root)
 
-    def get_right(self):
-        return self.right
-    
-    def set_father(self, father):
-        self.father = father
+    def createTree(self, post):
+        stack = []
+        for token in post:
+            if token == '.':
+                left = stack.pop()
+                right = stack.pop()
+                temp = Node('cat', token, left_child=left, right_child=right)
+                stack.append(temp)
+            elif token == '+':
+                left = stack.pop()
+                right = stack.pop()
+                temp = Node('or', token, left_child=left, right_child=right)
+                stack.append(temp)
+            elif token == '*':
+                left = stack.pop()  # Star node has only one child.
+                temp = Node('star', token, left_child=left)
+                stack.append(temp)
+            else:  # identifier
+                temp = Node('identifier', token, name=self.giveNextId())
+                self.leaves[temp.name] = temp.label
+                stack.append(temp)
 
-    def get_father(self):
-        return self.father
-    
-    def set_data(self, data):
-        self.data = data
+        temp = Node('identifier', '#', name=self.giveNextId())
+        self.leaves[temp.name] = temp.label
+        self.root.left_child = stack.pop()
+        self.root.right_child = temp
 
-    def get_data(self):
-        return self.data
+    def giveNextId(self):
+        name = self.id_counter
+        self.id_counter += 1
+        return name
 
-    def post_order(self, root):
-        res = []
-        if root:
-            res = self.post_order(root.left)
-            res = res + self.post_order(root.right)
-            res.append(root)
-        return res
-
-def render_tree(regex):
-    string = regex.replace(' ','')[::-1]
-    tree = Node()
-    last = tree
-    index = 0
-    while(index < len(string)):
-        char = string[index]
-        if char == '#':
-            last.data = '#'
-            last.father = Node(left=last)
-            last.is_first_of_chain = True
-            tree = last
-        else:
-            last, index = add_node(index,string,last)
-        index = index + 1
-    return tree.father.left
-
-def add_node(index, string, node):
-    char = string[index]
-    if char == ')':
-        index = index+1
-        char = string[index]
-        new_node = Node(data=char, first=True)
-        new_node.father = Node(left=new_node)
-        while(not string[index] == '('):
-            new_node, index = add_node(index+1, string, new_node)
-        n = new_node
-        while(n.data):
-            n = n.father
-        n = n.left
-        if not node.data == '*':
-            new = concatenation(n,node)
-            new.left.fulfilled = True
-            return new.left, index
-        else:
-            node.left = n
-            node.father.fulfilled = True
-            return node.father, index
-    elif char == '(':
-        return node, index
-    elif char == '|':
-        n = node
-        while(not n.is_first_of_chain):
-            n = node.father
-        new = Node(right=n,data='|', father=n.father)
-        n.father.left = new
-        n.father = new
-        return new, index
-    elif node.fulfilled:
-        new = concatenation(Node(data=char),node)
-        return new.left, index
-    elif node.data == '|':
-        node.left = Node(data=char, first=True, father=node)
-        return node.left, index
-    elif node.data == '*':
-        node.left = Node(data=char,father=node)
-        node.fulfilled = True
-        return node, index
-    else:
-        new = concatenation(Node(data=char),node)
-        return new.left, index
-    
-def def_nodes_function(tree):
-    nodes = tree.post_order(tree)
-    count = 1
-    nodes_index = dict()
-    for no in nodes:
-        if no.data == '|':
-                no.nullable = no.left.nullable or no.right.nullable
-                no.firstpos = no.left.firstpos | no.right.firstpos
-                no.lastpos = no.left.lastpos | no.right.lastpos
-        elif no.data == 'concatenation':
-            no.nullable = no.left.nullable and no.right.nullable
-            if no.left.nullable:
-                no.firstpos = no.left.firstpos | no.right.firstpos
-            else:
-                no.firstpos = no.left.firstpos
-            if no.right.nullable:
-                no.lastpos = no.left.lastpos | no.right.lastpos
-            else:
-                no.lastpos = no.right.lastpos
-        elif no.data == '*':
-            no.nullable = True
-            no.firstpos = no.left.firstpos
-            no.lastpos = no.left.lastpos
-        else:
-            if no.data != '&':
-                no.nullable = False
-                no.firstpos = set([count])
-                no.lastpos = set([count])
-                nodes_index[f'{count}'] = no.data
-                count = count + 1
-            else:
-                no.nullable = True
-                no.firstpos = set()
-                no.lastpos = set()
-    return count-1, nodes_index
-    
-def concatenation(node1,node2):
-    if node2.is_first_of_chain:
-        is_first = True
-        node2.is_first_of_chain = False
-    else:
-        is_first = False
-    newNode = Node(right=node2, data='concatenation', father=node2.father, first=is_first)
-    node1.father = newNode
-    node2.father.left = newNode
-    newNode.left = node1
-    return newNode
-
-def define_followpos(tree, n_nodes):
-    nodes = tree.post_order(tree)
-    followpos = dict()
-    for index in range(n_nodes):
-        followpos[f'{index+1}'] = set()
-    for no in nodes:
-        if no.data == 'concatenation':
-            for lastpos_node in no.left.lastpos:
-                followpos[str(lastpos_node)] = followpos[str(lastpos_node)] | no.right.firstpos
-        if no.data == '*':
-            for firstpos_node in no.lastpos:
-                followpos[str(firstpos_node)] = followpos[str(firstpos_node)] | no.firstpos
-    return followpos, tree.firstpos
-
-def dfa(followpos, nodes_index, initial_state):
-    union = dict()
-    states = list()
-    states.append(initial_state)
-    visited_states = list()
-    automata = dict()
-    while(not len(states) == 0):
-        state = states.pop()
-        visited_states.append(state)
-        for pos in state:
-            node = nodes_index.get(str(pos))
-            if not node == '#':
-                if not union.__contains__(node):
-                    union[node] = set(followpos.get(str(pos)))
+    def postorderNullableFirstposLastposFollowpos(self, node):
+        if (node):
+            self.postorderNullableFirstposLastposFollowpos(node.left_child)
+            self.postorderNullableFirstposLastposFollowpos(node.right_child)
+            if node.type == 'identifier':
+                if node.label == '@':
+                    node.nullable = True
                 else:
-                    union[node] = union.get(node) | set(followpos.get(str(pos)))
-        for s in union.items():
-            if visited_states.count(s[1]) == 0:
-                states.append(s[1])
-        automata[str(state)] = union.copy()
-        union.clear()
-    return automata
+                    node.firstpos.add(node.name)
+                    node.lastpos.add(node.name)
+            elif node.type == 'or':
+                node.nullable = node.left_child.nullable or node.right_child.nullable
+                node.firstpos = node.left_child.firstpos.union(node.right_child.firstpos)
+                node.lastpos = node.left_child.lastpos.union(node.right_child.lastpos)
+            elif node.type == 'star':
+                node.nullable = True
+                node.firstpos = node.left_child.firstpos
+                node.lastpos = node.left_child.lastpos
+                self.computeFollows(node)  # Follows is only computed for star and cat nodes
+            elif node.type == 'cat':
+                node.nullable = node.left_child.nullable and node.right_child.nullable
+                if node.left_child.nullable:
+                    node.firstpos = node.left_child.firstpos.union(node.right_child.firstpos)
+                else:
+                    node.firstpos = node.left_child.firstpos
+                if node.right_child.nullable:
+                    node.lastpos = node.left_child.lastpos.union(node.right_child.lastpos)
+                else:
+                    node.lastpos = node.right_child.lastpos
+                self.computeFollows(node)
+        else:
+            return
 
-def format_dfa(automata, initial_state, final, alphabet):
-    dfa = dict()
-    dfa['n_estados'] = len(automata)
-    dfa['inicial'] = initial_state
-    dfa['aceitacao'] = list()
-    dfa['alfabeto'] = list(alphabet)
-    dfa['transicoes'] = dict()
-    estados = []
-    for transiction in automata:
-        if transiction.find(final):
-            dfa.get('aceitacao').append(transiction)
-        t = dict()
+    def computeFollows(self, node):
+        if node.type == 'cat':
+            for i in node.left_child.lastpos:
+                self.followpos[i] = self.followpos[i].union(node.right_child.firstpos)
+        elif node.type == 'star':
+            for i in node.left_child.lastpos:
+                self.followpos[i] = self.followpos[i].union(node.left_child.firstpos)
+                
+# Classe criada com o proposito de identificarmos o set_id deste estado (na construcao da arvore -> followPos e lastPos)
+class StateOfDFAWithTree:
+    def __init__(self, alphabet, id_list, name, terminal_id):
+        self.name = name
+        self.id_set = set(id_list)
+        self.transitions = dict()
+        self.final = terminal_id in self.id_set
         for a in alphabet:
-            tr = automata.get(transiction).get(a)
-            if (tr):
-                t[a] = [str(tr)]
-            else:
-                t[a] = []
-        dfa.get('transicoes')[transiction] = t
-    nomes_estados = list(dfa['transicoes'].keys())
-    estado_inicial = dfa['inicial']
-    estados_finais = []
-    for i in range(len(nomes_estados)):
-        estado_a_criar = State(nomes_estados[i])
-        estados.append(estado_a_criar)
-        if str(estado_inicial) == str(estado_a_criar.id):
-            estado_inicial = estado_a_criar
-        if (str(estado_a_criar.id) in dfa['aceitacao']):
-            estados_finais.append(estado_a_criar)
-    transictions = dfa['transicoes']
-    for k, v in transictions.items():
-        index = nomes_estados.index(str(k))
-        for k2, v2 in v.items():
-            if v2 != []:
-               indexForTarget = nomes_estados.index(str(v2[0]))
-               estados[index].addTransition(k2, estados[indexForTarget]) 
-    dfamin = AF(dfa['alfabeto'], estados, estado_inicial, estados_finais)
-    return dfamin
+            self.transitions[a] = {}
 
-def er_to_dfa(string):
-    tree = render_tree(string)
-    n_nodes, nodes_index = def_nodes_function(tree)
-    followpos, initial_state = define_followpos(tree, n_nodes)
-    automata = dfa(followpos,nodes_index,initial_state)
-    final = [item[0] for item in list(nodes_index.items()) if item[1] == '#'][0]
-    alphabet = set([item[1] for item in list(nodes_index.items()) if not item[1] == '#'])
-    return format_dfa(automata, initial_state, final, alphabet)
+    def isFinal(self):
+        return self.final
+
+class DFAWithTree:
+    # Criou-se uma classe a fim de aplicar a recursão mais facilmente com o armazenamente dos name's
+    def __init__(self, alphabet, tree):
+        self.states = []
+        self.alphabet = alphabet
+        self.id_counter = 1
+        self.terminal = tree.id_counter - 1
+        self.computeStates(tree)
+
+    def computeStates(self, tree):
+        D1 = StateOfDFAWithTree(self.alphabet, tree.root.firstpos, self.giveNextId(), self.terminal)
+        self.states.append(D1)
+        queue = [D1]
+        while len(queue) > 0:
+            st = queue.pop(0)
+            new_states = self.determineTransitions(st, tree)
+            for s in new_states:
+                state = StateOfDFAWithTree(self.alphabet, s, self.giveNextId(), self.terminal)
+                self.states.append(state)
+                queue.append(state)
+
+    def determineTransitions(self, state, tree):
+        new_states = []
+        for i in state.id_set:
+            if i == self.terminal:
+                continue
+            label = tree.leaves[i]
+            if state.transitions[label] == {}:
+                state.transitions[label] = tree.followpos[i]
+            else:
+                state.transitions[label] = state.transitions[label].union(tree.followpos[i])
+        for a in self.alphabet:
+            if state.transitions[a] != {}:
+                new = True
+                for s in self.states:
+                    if s.id_set == state.transitions[a] or state.transitions[a] in new_states:
+                        new = False
+                if new:
+                    new_states.append(state.transitions[a])
+        return new_states
+
+    def processingInPostOrder(self):
+        has_none_state = False
+        for state in self.states:
+            for a in self.alphabet:
+                if state.transitions[a] == {}:
+                    has_none_state = True
+                    state.transitions[a] = self.id_counter
+                SET = state.transitions[a]
+                for state2 in self.states:
+                    if state2.id_set == SET:
+                        state.transitions[a] = state2.name
+        if has_none_state:
+            self.states.append(StateOfDFAWithTree(self.alphabet, [], self.id_counter, self.terminal))
+            for a in self.alphabet:
+                self.states[-1].transitions[a] = self.states[-1].name
+
+    def getFinalStates(self):
+        states_final_or_not = []
+        for i in self.states:
+            states_final_or_not.append(i.isFinal())
+        return states_final_or_not
+
+    def giveNextId(self):
+        name = self.id_counter
+        self.id_counter += 1
+        return name
+    
+def createTokenQueue(inputOfRegex):
+    tokens = []
+    name = ''
+    for letter in inputOfRegex:
+        if letter in ['(', ')', '.', '*', '+']:
+            if name != '':
+                tokens.append(name)
+                name = ''
+            tokens.append(letter)
+        else:
+            name = name + letter
+    if name != '':
+        tokens.append(name)
+    return tokens
+
+def createPostfixTokenQueue(tokens):
+    output_queue = []
+    stack = []
+    for token in tokens:
+        if token == '(':
+            stack.append('(')
+        elif token == ')':
+            while (len(stack) > 0 and stack[-1] != '('):
+                output_queue.append(stack.pop())
+            stack.pop()
+        elif token == '*':
+            stack.append(token)
+        elif token == '.':
+            while len(stack) > 0 and stack[-1] == '*':
+                output_queue.append(stack.pop())
+            stack.append(token)
+        elif token == '+':
+            while len(stack) > 0 and (stack[-1] == '*' or stack[-1] == '.'):
+                output_queue.append(stack.pop())
+            stack.append(token)
+        else:
+            output_queue.append(token)
+    while (len(stack) > 0):
+        output_queue.append(stack.pop())
+    return output_queue
+
+def readInputFromTerminal():
+    alph = []
+    print("Quantidade de letras: ",end='')
+    alphabetLenght = int(input())
+    for i in range(alphabetLenght):
+        print(f"Escreva a letra {i + 1}:",end='')
+        letter = str(input())
+        alph.append(letter)
+    print("Escreva a expressão regular:")
+    regex = str(input())
+    return alph, regex
+
+def returnAsAFD(dfaWithTree):
+    alphabet = dfaWithTree.alphabet
+    states = dfaWithTree.states
+    finalStates = dfaWithTree.getFinalStates()
+    statesForAFD = []
+    statesForAFDIds = []
+    statesIdsSets = []
+    for i in range(len(states)):
+        s = State(str(states[i].id_set))
+        statesForAFDIds.append((states[i].id_set))
+        statesForAFD.append(s)
+        statesIdsSets.append(states[i].id_set)
+        
+    for i in range(len(states)):
+        for symbol, to in states[i].transitions.items():
+            if to != {}:
+                index = statesIdsSets.index(to)
+                statesForAFD[i].addTransition(symbol, statesForAFD[index])
+    
+    initialState = statesForAFD[0]
+    finalStatesAFD = []
+    for i in range(len(finalStates)):
+        if(finalStates[i]):
+            finalStatesAFD.append(statesForAFD[i])
+    af = AF(alphabet, statesForAFD, initialState, finalStatesAFD)
+    print(af)
+    return af
+
+def regexIntoAFD():
+    alphabet, inputOfRegex = readInputFromTerminal()
+    tokens = createTokenQueue(inputOfRegex)
+    post = createPostfixTokenQueue(tokens)
+    tree = Tree(post)
+    d = DFAWithTree(alphabet, tree)
+    d = returnAsAFD(d)
+
+regexIntoAFD()
+# '((1(00*1)*1)|0)*#'
