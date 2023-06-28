@@ -369,6 +369,12 @@ class GR:
     table: Dict[str, Dict[str,str]] = {}
     first = self.first()
     follow = self.follow()
+    # checagem da interseção dos first e follows
+    for nTerminal in self.nTerminals:
+      if (first[nTerminal].intersection(['&'])):
+        if (len(first[nTerminal].difference(['&']).intersection(follow[nTerminal].difference(['$']))) != 0):
+          print('A gramática não é LL1')
+          exit(1)
     for nTerminal in self.nTerminals:
       table[nTerminal] = {}
     for nTerminal in self.nTerminals:
@@ -429,6 +435,7 @@ class GR:
   def eliminateDirect(self):
     newProductions = {}
     newNonTerminals = []
+    possibleNTerminals = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
     belongToMap = False
     for key,value in self.productions.items():
         for v in value :
@@ -438,7 +445,15 @@ class GR:
             newProductions[key] = value 
         else :
             key1 = key
-            key2 = key+'\''
+
+            key2 = None
+            for possibleNTerminal in possibleNTerminals:
+              if(possibleNTerminal not in self.nTerminals and possibleNTerminal not in newNonTerminals):
+                key2 = possibleNTerminal
+                break
+            if key2 == None:
+              print('Erro: Há mais não terminais do que é possível representar símbolos não terminais de uma gramática')
+              exit(-1)
             value1 = []
             value2 = []
             for v in value :
@@ -455,7 +470,7 @@ class GR:
     self.nTerminals = list(set(self.nTerminals).union(set(newNonTerminals)))
 
   def removeLeftRecursion(self):
-    self.productions = self.readRightSide()
+    # self.productions = self.readRightSide()
     self.eliminateIndirect()
     self.eliminateDirect()
 

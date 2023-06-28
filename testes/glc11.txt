@@ -1,0 +1,8 @@
+GR
++,-,*,/,p,(,),i,c
+E,T,F,P
+E
+E E+T E-T T
+T T*F F T/F
+F FpP P
+P (E) i c
