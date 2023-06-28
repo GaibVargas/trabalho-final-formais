@@ -402,18 +402,7 @@ class GR:
       else:
         firstOfProductionReturn = firstOfProductionReturn.union(self.firstOfProduction(production[1:len(production)], firstList))
     return firstOfProductionReturn
-  
-  def readRightSide(self):
-    for key,value in self.productions.items() :
-        if '&' in value :
-            value.remove('&')
-            for key1,value1 in self.productions.items() :
-                for info in value1 :
-                    if key.strip() in info.strip() :
-                        newstr = info.replace(key, '')
-                        value1.append(newstr)
-    return self.productions
-
+    
   def eliminateIndirect(self):
     x = 0
     y = 0
@@ -470,7 +459,6 @@ class GR:
     self.nTerminals = list(set(self.nTerminals).union(set(newNonTerminals)))
 
   def removeLeftRecursion(self):
-    # self.productions = self.readRightSide()
     self.eliminateIndirect()
     self.eliminateDirect()
 
