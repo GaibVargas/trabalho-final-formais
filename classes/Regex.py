@@ -266,6 +266,3 @@ def regexIntoAFD():
     tree = Tree(post)
     d = DFAWithTree(alphabet, tree)
     d = returnAsAFD(d)
-
-regexIntoAFD()
-# '((1(00*1)*1)|0)*#'

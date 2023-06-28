@@ -462,6 +462,41 @@ class GR:
     self.eliminateIndirect()
     self.eliminateDirect()
 
+  def test(self, word):
+    self.removeLeftRecursion()
+    if(not(self.isDet())):
+      self.determinize()
+    table = self.LL1Table()
+    stack = ['$', self.initial]
+    splittedWord = list(word)
+    idx = 0
+    while idx < len(splittedWord):
+      entry = splittedWord[idx]
+      stackSymbol = stack[-1]
+      # entrada = símbolo na pilha
+      if stackSymbol == entry:
+        idx += 1
+        stack.pop()
+      # símbolo na pilha é terminal e é diferente da entrada
+      elif stackSymbol in self.terminals:
+        return False
+      # símbolo na pilha é um não terminal
+      elif stackSymbol in self.nTerminals:
+        # símbolo na pilha x entrada é erro
+        if (entry not in table[stackSymbol].keys()):
+          return False
+        action = table[stackSymbol][entry]
+        stack.pop()
+        # empilha símbolos na pilha se necessário
+        if action != '&':
+          for a in action[::-1]:
+            stack.append(a)
+      # qualquer outro caso é erro
+      else:
+        return False
+    # retorna se chegou ao final da pilha, ou se pilha vazia
+    return True if len(stack) == 1 and stack[0] == '$' else len(stack) == 0
+
   def __str__(self):
     productions = ''
     for head, body in self.productions.items():

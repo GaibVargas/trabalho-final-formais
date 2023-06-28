@@ -132,43 +132,19 @@ def LL1Table():
     glc.determinize()
   table = Table(glc.LL1Table())
   print(table)
-  
-def testASentenceForLL1():
+
+def APTest():
   fileName = sys.argv[2]
-  expression = sys.argv[3]+'&'
   glc = readFile(fileName)
-  glc.removeLeftRecursion()
-  if(not(glc.isDet())):
-    glc.determinize()
-  table = Table(glc.LL1Table())
-  print(f"\Validando a String => {expression}\n")
-  stack = [glc.initial, '&']
-  matched = "-"
-  while(True):
-    step = "-"
-    if(stack[0] == expression[0] and stack[0] == "&"):
-      print("String aceita!")
-      break
-    elif(stack[0] == expression[0]):
-      if(matched == "-"):
-        matched = expression[0]
-      else:    
-        matched = matched + expression[0]
-      step = "Matched "+expression[0]
-      expression = expression[1:]
-      stack.pop(0)
-    else:
-      mappingNonTerminalDictToArray = (list(table.table.keys()))[glc.nTerminals.index(stack[0])]
-      mappingTerminalDictToArray = (list((table.table.values()).keys()))[glc.terminals.index(expression[0])]
-      step = table.table[mappingNonTerminalDictToArray][mappingTerminalDictToArray]
-      stack.pop(0)
-      i = 0
-      for term in step[2:]:
-        if(term != "`"):
-          stack.insert(i,term)
-        i+=1
-    print(step)
-  print("Falhou!")
+  word = '$'
+  if (len(sys.argv) >= 4):
+    if sys.argv[3] != '' and sys.argv[3] != ' ':
+      word = sys.argv[3]
+  test = glc.test(word)
+  if (word == '$'):
+    word = 'Palavra vazia'
+  testResult = 'Sim' if test else 'Não'
+  print(f'"{word}" pertence a linguagem? {testResult}')
   
 def main():
   function = sys.argv[1]
@@ -198,4 +174,6 @@ def main():
     return GLCLeftRecursion()
   if function == "LL1-table":
     return LL1Table()
+  if function == "AP-test":
+    return APTest()
 main()
