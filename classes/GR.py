@@ -381,7 +381,6 @@ class GR:
                 table[nTerminal][followOfHead] = production    
     return table
           
-  
   def firstOfProduction(self, production: str, firstList) -> Set[str]:
     if(production[0] in self.terminals):
       return set([production[0]])
@@ -398,6 +397,68 @@ class GR:
         firstOfProductionReturn = firstOfProductionReturn.union(self.firstOfProduction(production[1:len(production)], firstList))
     return firstOfProductionReturn
   
+  def readRightSide(self):
+    for key,value in self.productions.items() :
+        if '&' in value :
+            value.remove('&')
+            for key1,value1 in self.productions.items() :
+                for info in value1 :
+                    if key.strip() in info.strip() :
+                        newstr = info.replace(key, '')
+                        value1.append(newstr)
+    return self.productions
+
+  def eliminateIndirect(self):
+    x = 0
+    y = 0
+    for key, value in self.productions.items() :
+        for key1, value1 in self.productions.items() :
+            if y > x :
+                for v in value1 :
+                    if v[0] == key :
+                        vv = v[1:]
+                        new_values = []
+                        for v1 in value :
+                            new_values.append(v1+vv)
+                        value1 += new_values
+                        value1.remove(v)            
+            y+=1
+        x+=1
+        y=0
+
+  def eliminateDirect(self):
+    newProductions = {}
+    newNonTerminals = []
+    belongToMap = False
+    for key,value in self.productions.items():
+        for v in value :
+            if v[0] == key :
+                belongToMap = True
+        if belongToMap==False:
+            newProductions[key] = value 
+        else :
+            key1 = key
+            key2 = key+'\''
+            value1 = []
+            value2 = []
+            for v in value :
+                if v[0] != key:
+                    value1.append(v+key2)
+                else :
+                    value2.append(v[1:]+key2)    
+            value2.append('&')
+            newProductions[key1] = value1
+            newProductions[key2] = value2
+            newNonTerminals.append(key2)
+        belongToMap = False
+    self.productions = newProductions
+    self.nTerminals = list(set(self.nTerminals).union(set(newNonTerminals)))
+
+  def removeLeftRecursion(self):
+    self.productions = self.readRightSide()
+    self.eliminateIndirect()
+    self.eliminateDirect()
+
   def __str__(self):
     productions = ''
     for head, body in self.productions.items():
@@ -409,3 +470,4 @@ class GR:
       f"{self.initial}"
       f"{productions}"
     )
+  
