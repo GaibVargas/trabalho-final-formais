@@ -145,9 +145,11 @@ class DFAWithTree:
     def determineTransitions(self, state, tree):
         new_states = []
         for i in state.id_set:
+            print(state.id_set)
             if i == self.terminal:
                 continue
             label = tree.leaves[i]
+            print(tree.leaves)
             if state.transitions[label] == {}:
                 state.transitions[label] = tree.followpos[i]
             else:
@@ -276,6 +278,7 @@ def regexIntoAFD():
     post = createPostfixTokenQueue(tokens)
     print(post)
     tree = Tree(post)
+    print(tree.leaves)
     #tree.printPostOrder()
     d = DFAWithTree(alphabet, tree)
     d = returnAsAFD(d)

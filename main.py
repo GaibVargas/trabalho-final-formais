@@ -95,7 +95,7 @@ def AFIntersection():
 
 def ERToAFD():
   afd = regexIntoAFD()
-  #archivePrint('af', afd)
+  archivePrint('af', afd)
 
 def FirstFollow():
   fileName = sys.argv[2]
