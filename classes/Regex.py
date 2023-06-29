@@ -14,6 +14,13 @@ class Node:
 
     def getId(self):
         return self.name
+    
+    def printPostOrder(self):
+        if(self.left_child != None):
+            self.left_child.printPostOrder()
+        if(self.right_child != None):
+            self.right_child.printPostOrder()
+        print(self.label, end="")
 
 class Tree:
     def __init__(self, post):
@@ -28,13 +35,13 @@ class Tree:
         stack = []
         for token in post:
             if token == '.':
-                left = stack.pop()
                 right = stack.pop()
+                left = stack.pop()
                 temp = Node('cat', token, left_child=left, right_child=right)
                 stack.append(temp)
             elif token == '+':
-                left = stack.pop()
                 right = stack.pop()
+                left = stack.pop()
                 temp = Node('or', token, left_child=left, right_child=right)
                 stack.append(temp)
             elif token == '*':
@@ -88,6 +95,10 @@ class Tree:
                 self.computeFollows(node)
         else:
             return
+        
+    def printPostOrder(self):
+        if(self.root != None):
+            self.root.printPostOrder()
 
     def computeFollows(self, node):
         if node.type == 'cat':
@@ -263,6 +274,9 @@ def regexIntoAFD():
     alphabet, inputOfRegex = readInputFromTerminal()
     tokens = createTokenQueue(inputOfRegex)
     post = createPostfixTokenQueue(tokens)
+    print(post)
     tree = Tree(post)
+    #tree.printPostOrder()
     d = DFAWithTree(alphabet, tree)
     d = returnAsAFD(d)
+    return d

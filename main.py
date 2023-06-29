@@ -94,7 +94,8 @@ def AFIntersection():
   archivePrint('af', unionOfComplement.complement())
 
 def ERToAFD():
-  regexIntoAFD()
+  afd = regexIntoAFD()
+  #archivePrint('af', afd)
 
 def FirstFollow():
   fileName = sys.argv[2]
