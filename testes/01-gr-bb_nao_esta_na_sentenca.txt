@@ -1,0 +1,6 @@
+GR
+a,b
+S,A
+S
+S aS bA a b
+A aS a

@@ -1,9 +1,0 @@
-GR
-i,+,*,!
-E,Y,T,X,F
-E
-E TY
-Y +TY &
-T FX
-X *FX &
-F !F i
