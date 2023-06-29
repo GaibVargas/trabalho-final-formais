@@ -232,13 +232,13 @@ def createPostfixTokenQueue(tokens):
 
 def readInputFromTerminal():
     alph = []
-    print("Quantidade de letras: ",end='')
+    print("Quantidade de letras no alfabeto: ",end='')
     alphabetLenght = int(input())
     for i in range(alphabetLenght):
-        print(f"Escreva a letra {i + 1}:",end='')
+        print(f"Escreva a letra {i + 1}: ",end='')
         letter = str(input())
         alph.append(letter)
-    print("Escreva a expressão regular:")
+    print("Escreva a expressão regular (deixe as concatenações explicitas usando . (ponto) e utilize + ao invés de |): ")
     regex = str(input())
     return alph, regex
 
@@ -274,7 +274,6 @@ def regexIntoAFD():
     alphabet, inputOfRegex = readInputFromTerminal()
     tokens = createTokenQueue(inputOfRegex)
     post = createPostfixTokenQueue(tokens)
-    print(post)
     tree = Tree(post)
     #tree.printPostOrder()
     d = DFAWithTree(alphabet, tree)
